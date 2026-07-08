@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © MageDevGroup. All rights reserved.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <magedevgroup_admin_sso>
+            <general>
+                <enabled>0</enabled>
+                <enforce_sso>0</enforce_sso>
+                <break_glass>1</break_glass>
+            </general>
+        </magedevgroup_admin_sso>
+    </default>
+</config>

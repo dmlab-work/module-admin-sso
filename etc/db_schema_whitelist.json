@@ -1,0 +1,10 @@
+{
+    "admin_user": {
+        "column": {
+            "magedevgroup_sso_subject_id": true
+        },
+        "constraint": {
+            "MAGEDEVGROUP_ADMIN_SSO_SUBJECT_ID": true
+        }
+    }
+}

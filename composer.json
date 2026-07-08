@@ -1,0 +1,23 @@
+{
+    "name": "magedevgroup/module-admin-sso",
+    "description": "Admin panel SSO capability for Magento 2 — provider-agnostic OIDC login for the admin panel (JIT admin-user creation, IdP-group to ACL-role mapping, enforce-SSO + break-glass).",
+    "type": "magento2-module",
+    "license": "OSL-3.0",
+    "version": "0.0.1",
+    "require": {
+        "php": "~8.3.0||~8.4.0||~8.5.0",
+        "magento/framework": ">=103.0",
+        "magedevgroup/module-sso-core": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.0"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "MageDevGroup\\AdminSso\\": ""
+        }
+    }
+}

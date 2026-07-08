@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © MageDevGroup. All rights reserved.
+ */
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="admin_user">
+        <!-- IdP subject (`sub`) linked to this admin at JIT provisioning; the stable
+             key for re-login. Nullable so local-only admins keep an empty value;
+             unique so one IdP identity maps to at most one admin (MySQL allows many NULLs). -->
+        <column xsi:type="varchar" name="magedevgroup_sso_subject_id" nullable="true" length="255"
+                comment="MageDevGroup SSO subject identifier"/>
+        <constraint xsi:type="unique" referenceId="MAGEDEVGROUP_ADMIN_SSO_SUBJECT_ID">
+            <column name="magedevgroup_sso_subject_id"/>
+        </constraint>
+    </table>
+</schema>
