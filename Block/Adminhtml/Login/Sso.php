@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Block\Adminhtml\Login;
+namespace DmLab\AdminSso\Block\Adminhtml\Login;
 
-use MageDevGroup\AdminSso\Model\ActiveProviderResolver;
-use MageDevGroup\AdminSso\Model\Config;
+use DmLab\AdminSso\Model\ActiveProviderResolver;
+use DmLab\AdminSso\Model\Config;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;

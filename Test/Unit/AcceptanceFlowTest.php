@@ -1,34 +1,34 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit;
+namespace DmLab\AdminSso\Test\Unit;
 
-use MageDevGroup\AdminSso\Block\Adminhtml\Login\Sso;
-use MageDevGroup\AdminSso\Model\ActiveProviderResolver;
-use MageDevGroup\AdminSso\Model\AdminSessionCreator;
-use MageDevGroup\AdminSso\Model\Config;
-use MageDevGroup\AdminSso\Model\Oidc\AuthorizationStarter;
-use MageDevGroup\AdminSso\Model\Oidc\CallbackHandler;
-use MageDevGroup\AdminSso\Model\PresetRegistry;
-use MageDevGroup\AdminSso\Model\RoleAssigner;
-use MageDevGroup\AdminSso\Model\TwoFactorAuth\SessionGranter;
-use MageDevGroup\AdminSso\Model\UserProvisioner;
-use MageDevGroup\SsoCore\Api\AuthorizationStateStorageInterface;
-use MageDevGroup\SsoCore\Api\Data\AuthorizationStateInterface;
-use MageDevGroup\SsoCore\Api\ProviderPresetInterface;
-use MageDevGroup\SsoCore\Model\Data\Identity;
-use MageDevGroup\SsoCore\Model\Mapping\MappingEngine;
-use MageDevGroup\SsoCore\Model\Oidc\AuthorizationRequestFactory;
-use MageDevGroup\SsoCore\Model\Oidc\DiscoveryClient;
-use MageDevGroup\SsoCore\Model\Oidc\IdentityFactory;
-use MageDevGroup\SsoCore\Model\Oidc\IdTokenValidator;
-use MageDevGroup\SsoCore\Model\Oidc\JwksClient;
-use MageDevGroup\SsoCore\Model\Oidc\ProviderMetadata;
-use MageDevGroup\SsoCore\Model\Oidc\TokenClient;
-use MageDevGroup\SsoCore\Model\Oidc\TokenResponse;
+use DmLab\AdminSso\Block\Adminhtml\Login\Sso;
+use DmLab\AdminSso\Model\ActiveProviderResolver;
+use DmLab\AdminSso\Model\AdminSessionCreator;
+use DmLab\AdminSso\Model\Config;
+use DmLab\AdminSso\Model\Oidc\AuthorizationStarter;
+use DmLab\AdminSso\Model\Oidc\CallbackHandler;
+use DmLab\AdminSso\Model\PresetRegistry;
+use DmLab\AdminSso\Model\RoleAssigner;
+use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter;
+use DmLab\AdminSso\Model\UserProvisioner;
+use DmLab\SsoCore\Api\AuthorizationStateStorageInterface;
+use DmLab\SsoCore\Api\Data\AuthorizationStateInterface;
+use DmLab\SsoCore\Api\ProviderPresetInterface;
+use DmLab\SsoCore\Model\Data\Identity;
+use DmLab\SsoCore\Model\Mapping\MappingEngine;
+use DmLab\SsoCore\Model\Oidc\AuthorizationRequestFactory;
+use DmLab\SsoCore\Model\Oidc\DiscoveryClient;
+use DmLab\SsoCore\Model\Oidc\IdentityFactory;
+use DmLab\SsoCore\Model\Oidc\IdTokenValidator;
+use DmLab\SsoCore\Model\Oidc\JwksClient;
+use DmLab\SsoCore\Model\Oidc\ProviderMetadata;
+use DmLab\SsoCore\Model\Oidc\TokenClient;
+use DmLab\SsoCore\Model\Oidc\TokenResponse;
 use Jose\Component\Core\JWKSet;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
@@ -71,12 +71,12 @@ class AcceptanceFlowTest extends TestCase
 
     /** @var array<string,mixed> config store backing the real Config/resolver */
     private array $configValues = [
-        'magedevgroup_admin_sso/general/enabled' => '1',
-        'magedevgroup_admin_sso/general/active_provider' => 'stub',
-        'magedevgroup_admin_sso/general/client_id' => self::CLIENT_ID,
-        'magedevgroup_admin_sso/general/client_secret' => 'enc:' . self::CLIENT_SECRET,
-        'magedevgroup_admin_sso/general/group_role_map' => 'admins=5',
-        'magedevgroup_admin_sso/general/default_role' => '1',
+        'dmlab_admin_sso/general/enabled' => '1',
+        'dmlab_admin_sso/general/active_provider' => 'stub',
+        'dmlab_admin_sso/general/client_id' => self::CLIENT_ID,
+        'dmlab_admin_sso/general/client_secret' => 'enc:' . self::CLIENT_SECRET,
+        'dmlab_admin_sso/general/group_role_map' => 'admins=5',
+        'dmlab_admin_sso/general/default_role' => '1',
     ];
 
     public function testFullSsoLoginFlowFromConfigToSession(): void

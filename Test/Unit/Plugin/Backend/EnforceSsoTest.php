@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\Plugin\Backend;
+namespace DmLab\AdminSso\Test\Unit\Plugin\Backend;
 
-use MageDevGroup\AdminSso\Model\Config;
-use MageDevGroup\AdminSso\Plugin\Backend\EnforceSso;
+use DmLab\AdminSso\Model\Config;
+use DmLab\AdminSso\Plugin\Backend\EnforceSso;
 use Magento\Backend\Model\Auth;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Exception\AuthenticationException;

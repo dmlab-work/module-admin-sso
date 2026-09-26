@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Model;
+namespace DmLab\AdminSso\Model;
 
-use MageDevGroup\SsoCore\Api\Data\IdentityInterface;
+use DmLab\SsoCore\Api\Data\IdentityInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Math\Random;
 use Magento\User\Model\ResourceModel\User as UserResource;
@@ -32,7 +32,7 @@ use Magento\User\Model\UserFactory;
 class UserProvisioner
 {
     /** admin_user column holding the IdP subject link (see etc/db_schema.xml). */
-    public const SUBJECT_FIELD = 'magedevgroup_sso_subject_id';
+    public const SUBJECT_FIELD = 'dmlab_sso_subject_id';
 
     /** Lastname used when the IdP releases no name / only a single-word name. */
     private const DEFAULT_LAST_NAME = 'SSO';

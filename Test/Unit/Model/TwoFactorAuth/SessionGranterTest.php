@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\Model\TwoFactorAuth;
+namespace DmLab\AdminSso\Test\Unit\Model\TwoFactorAuth;
 
-use MageDevGroup\AdminSso\Model\TwoFactorAuth\SessionGranter;
+use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter;
 use Magento\Framework\Module\Manager as ModuleManager;
 use Magento\Framework\ObjectManagerInterface;
 use Magento\TwoFactorAuth\Api\TfaSessionInterface;

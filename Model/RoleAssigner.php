@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Model;
+namespace DmLab\AdminSso\Model;
 
-use MageDevGroup\SsoCore\Api\Data\IdentityInterface;
-use MageDevGroup\SsoCore\Model\Mapping\MappingEngine;
+use DmLab\SsoCore\Api\Data\IdentityInterface;
+use DmLab\SsoCore\Model\Mapping\MappingEngine;
 use Magento\Authorization\Model\RoleFactory;
 use Magento\User\Model\ResourceModel\User as UserResource;
 use Magento\User\Model\User;

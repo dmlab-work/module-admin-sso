@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\App\Action\Plugin;
+namespace DmLab\AdminSso\App\Action\Plugin;
 
 use Magento\Backend\App\AbstractAction;
 use Magento\Backend\App\Action\Plugin\Authentication as CoreAuthentication;
@@ -15,8 +15,8 @@ use Magento\Framework\App\RequestInterface;
  *
  * The core plugin forwards every non-open backend action to the login page while
  * the user is not logged in — which the SSO flow always is when it begins. Without
- * this, {@see \MageDevGroup\AdminSso\Controller\Adminhtml\Sso\Start} and
- * {@see \MageDevGroup\AdminSso\Controller\Adminhtml\Sso\Callback} never dispatch,
+ * this, {@see \DmLab\AdminSso\Controller\Adminhtml\Sso\Start} and
+ * {@see \DmLab\AdminSso\Controller\Adminhtml\Sso\Callback} never dispatch,
  * so the browser is never sent to the IdP and the IdP redirect back is bounced.
  *
  * Unlike the core `_openActions` list — matched by bare action name across every

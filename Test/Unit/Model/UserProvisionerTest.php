@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\Model;
+namespace DmLab\AdminSso\Test\Unit\Model;
 
-use MageDevGroup\AdminSso\Model\UserProvisioner;
-use MageDevGroup\SsoCore\Model\Data\Identity;
+use DmLab\AdminSso\Model\UserProvisioner;
+use DmLab\SsoCore\Model\Data\Identity;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Math\Random;
 use Magento\User\Model\ResourceModel\User as UserResource;

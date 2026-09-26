@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\Model;
+namespace DmLab\AdminSso\Test\Unit\Model;
 
-use MageDevGroup\AdminSso\Model\AuthorizationState;
-use MageDevGroup\SsoCore\Api\Data\AuthorizationStateInterface;
+use DmLab\AdminSso\Model\AuthorizationState;
+use DmLab\SsoCore\Api\Data\AuthorizationStateInterface;
 use PHPUnit\Framework\TestCase;
 
 class AuthorizationStateTest extends TestCase

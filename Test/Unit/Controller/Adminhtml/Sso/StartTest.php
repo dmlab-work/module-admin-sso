@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\Controller\Adminhtml\Sso;
+namespace DmLab\AdminSso\Test\Unit\Controller\Adminhtml\Sso;
 
-use MageDevGroup\AdminSso\Controller\Adminhtml\Sso\Start;
-use MageDevGroup\AdminSso\Model\Oidc\AuthorizationStarter;
+use DmLab\AdminSso\Controller\Adminhtml\Sso\Start;
+use DmLab\AdminSso\Model\Oidc\AuthorizationStarter;
 use Magento\Backend\App\Action\Context;
 use Magento\Backend\Model\View\Result\Redirect;
 use Magento\Framework\Controller\Result\RedirectFactory;

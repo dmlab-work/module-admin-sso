@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Model\Config\Source;
+namespace DmLab\AdminSso\Model\Config\Source;
 
-use MageDevGroup\AdminSso\Model\PresetRegistry;
+use DmLab\AdminSso\Model\PresetRegistry;
 use Magento\Framework\Data\OptionSourceInterface;
 
 /**

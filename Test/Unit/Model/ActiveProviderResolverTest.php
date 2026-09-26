@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\Model;
+namespace DmLab\AdminSso\Test\Unit\Model;
 
-use MageDevGroup\AdminSso\Model\ActiveProviderResolver;
-use MageDevGroup\AdminSso\Model\PresetRegistry;
-use MageDevGroup\SsoCore\Api\ProviderPresetInterface;
+use DmLab\AdminSso\Model\ActiveProviderResolver;
+use DmLab\AdminSso\Model\PresetRegistry;
+use DmLab\SsoCore\Api\ProviderPresetInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use PHPUnit\Framework\TestCase;
 

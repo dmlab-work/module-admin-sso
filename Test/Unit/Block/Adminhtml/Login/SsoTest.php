@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\Block\Adminhtml\Login;
+namespace DmLab\AdminSso\Test\Unit\Block\Adminhtml\Login;
 
-use MageDevGroup\AdminSso\Block\Adminhtml\Login\Sso;
-use MageDevGroup\AdminSso\Model\ActiveProviderResolver;
-use MageDevGroup\AdminSso\Model\Config;
-use MageDevGroup\SsoCore\Api\ProviderPresetInterface;
+use DmLab\AdminSso\Block\Adminhtml\Login\Sso;
+use DmLab\AdminSso\Model\ActiveProviderResolver;
+use DmLab\AdminSso\Model\Config;
+use DmLab\SsoCore\Api\ProviderPresetInterface;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\TestFramework\Unit\Helper\ObjectManager;
 use Magento\Framework\View\Element\Template\Context;

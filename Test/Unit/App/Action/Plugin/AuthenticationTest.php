@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\App\Action\Plugin;
+namespace DmLab\AdminSso\Test\Unit\App\Action\Plugin;
 
-use MageDevGroup\AdminSso\App\Action\Plugin\Authentication;
+use DmLab\AdminSso\App\Action\Plugin\Authentication;
 use Magento\Backend\App\AbstractAction;
 use Magento\Backend\App\BackendAppList;
 use Magento\Backend\Model\Auth;

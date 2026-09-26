@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\Model;
+namespace DmLab\AdminSso\Test\Unit\Model;
 
-use MageDevGroup\AdminSso\Model\Config;
-use MageDevGroup\AdminSso\Model\RoleAssigner;
-use MageDevGroup\SsoCore\Model\Data\Identity;
-use MageDevGroup\SsoCore\Model\Mapping\MappingEngine;
+use DmLab\AdminSso\Model\Config;
+use DmLab\AdminSso\Model\RoleAssigner;
+use DmLab\SsoCore\Model\Data\Identity;
+use DmLab\SsoCore\Model\Mapping\MappingEngine;
 use Magento\Authorization\Model\Role;
 use Magento\Authorization\Model\RoleFactory;
 use Magento\User\Model\ResourceModel\User as UserResource;

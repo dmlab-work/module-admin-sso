@@ -1,15 +1,15 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Controller\Adminhtml\Sso;
+namespace DmLab\AdminSso\Controller\Adminhtml\Sso;
 
-use MageDevGroup\AdminSso\Model\AdminSessionCreator;
-use MageDevGroup\AdminSso\Model\Oidc\CallbackHandler;
-use MageDevGroup\AdminSso\Model\RoleAssigner;
-use MageDevGroup\AdminSso\Model\UserProvisioner;
+use DmLab\AdminSso\Model\AdminSessionCreator;
+use DmLab\AdminSso\Model\Oidc\CallbackHandler;
+use DmLab\AdminSso\Model\RoleAssigner;
+use DmLab\AdminSso\Model\UserProvisioner;
 use Magento\Backend\App\Action\Context;
 use Magento\Backend\Controller\Adminhtml\Auth;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;

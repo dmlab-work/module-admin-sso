@@ -1,10 +1,10 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Model;
+namespace DmLab\AdminSso\Model;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
@@ -21,25 +21,25 @@ use Magento\Framework\Encryption\EncryptorInterface;
 class Config
 {
     /** Whether admin SSO is enabled. */
-    public const XML_PATH_ENABLED = 'magedevgroup_admin_sso/general/enabled';
+    public const XML_PATH_ENABLED = 'dmlab_admin_sso/general/enabled';
 
     /** OIDC client (application) id issued by the IdP. */
-    public const XML_PATH_CLIENT_ID = 'magedevgroup_admin_sso/general/client_id';
+    public const XML_PATH_CLIENT_ID = 'dmlab_admin_sso/general/client_id';
 
     /** OIDC client secret, stored encrypted. */
-    public const XML_PATH_CLIENT_SECRET = 'magedevgroup_admin_sso/general/client_secret';
+    public const XML_PATH_CLIENT_SECRET = 'dmlab_admin_sso/general/client_secret';
 
     /** Whether the native admin login form is disabled (SSO enforced). */
-    public const XML_PATH_ENFORCE_SSO = 'magedevgroup_admin_sso/general/enforce_sso';
+    public const XML_PATH_ENFORCE_SSO = 'dmlab_admin_sso/general/enforce_sso';
 
     /** Whether the break-glass local-admin path stays available under enforce. */
-    public const XML_PATH_BREAK_GLASS = 'magedevgroup_admin_sso/general/break_glass';
+    public const XML_PATH_BREAK_GLASS = 'dmlab_admin_sso/general/break_glass';
 
     /** IdP-group → ACL-role rules, one `group=role_id` per line. */
-    public const XML_PATH_GROUP_ROLE_MAP = 'magedevgroup_admin_sso/general/group_role_map';
+    public const XML_PATH_GROUP_ROLE_MAP = 'dmlab_admin_sso/general/group_role_map';
 
     /** ACL role id assigned when no IdP group matches a mapping rule. */
-    public const XML_PATH_DEFAULT_ROLE = 'magedevgroup_admin_sso/general/default_role';
+    public const XML_PATH_DEFAULT_ROLE = 'dmlab_admin_sso/general/default_role';
 
     /**
      * @param ScopeConfigInterface $scopeConfig

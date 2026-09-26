@@ -1,13 +1,13 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Test\Unit\Model;
+namespace DmLab\AdminSso\Test\Unit\Model;
 
-use MageDevGroup\AdminSso\Model\AdminSessionCreator;
-use MageDevGroup\AdminSso\Model\TwoFactorAuth\SessionGranter as TwoFactorSessionGranter;
+use DmLab\AdminSso\Model\AdminSessionCreator;
+use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter as TwoFactorSessionGranter;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Framework\Event\ManagerInterface as EventManager;
 use Magento\User\Model\ResourceModel\User as UserResource;

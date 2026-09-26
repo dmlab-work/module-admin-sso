@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Controller\Adminhtml\Sso;
+namespace DmLab\AdminSso\Controller\Adminhtml\Sso;
 
-use MageDevGroup\AdminSso\Model\Oidc\AuthorizationStarter;
+use DmLab\AdminSso\Model\Oidc\AuthorizationStarter;
 use Magento\Backend\App\Action\Context;
 use Magento\Backend\Controller\Adminhtml\Auth;
 use Magento\Backend\Model\View\Result\Redirect;

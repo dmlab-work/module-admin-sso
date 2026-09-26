@@ -1,4 +1,4 @@
-# MageDevGroup_AdminSso
+# DmLab_AdminSso
 
 > Provider-agnostic single sign-on for the Magento 2 admin panel (OIDC).
 
@@ -19,16 +19,16 @@ The admin-login **capability core**: it logs staff into the Magento admin backen
 Normally installed via a provider plugin (e.g. `admin-sso-okta`), which pulls this core and `sso-core`:
 
 ```bash
-composer require magedevgroup/module-admin-sso-okta
-bin/magento module:enable MageDevGroup_SsoCore MageDevGroup_AdminSso MageDevGroup_AdminSsoOkta
+composer require dmlab/module-admin-sso-okta
+bin/magento module:enable DmLab_SsoCore DmLab_AdminSso DmLab_AdminSsoOkta
 bin/magento setup:upgrade
 ```
 
 Direct install of the core only:
 
 ```bash
-composer require magedevgroup/module-admin-sso
-bin/magento module:enable MageDevGroup_SsoCore MageDevGroup_AdminSso
+composer require dmlab/module-admin-sso
+bin/magento module:enable DmLab_SsoCore DmLab_AdminSso
 bin/magento setup:upgrade
 ```
 
@@ -36,7 +36,7 @@ Register the callback URL in your IdP: `https://<admin-host>/<admin-path>/admins
 
 ## Configuration
 
-Admin → Stores → Configuration → **MageDevGroup → Admin SSO → General** (config path `magedevgroup_admin_sso/general/*`).
+Admin → Stores → Configuration → **DMLab → Admin SSO → General** (config path `dmlab_admin_sso/general/*`).
 
 | Field | Path | Notes |
 |---|---|---|
@@ -77,7 +77,7 @@ With break-glass off and enforce on, a lockout is not recoverable from the UI �
 
 1. User clicks "Sign in with SSO" → `adminsso/sso/start` builds the OIDC auth URL (state + nonce + PKCE) via sso-core and the active preset, then redirects to the IdP.
 2. The IdP redirects back to `adminsso/sso/callback`, which validates `state`, exchanges the code, and normalizes claims into an `Identity` via sso-core.
-3. JIT: the admin user is matched by IdP `sub` (stored on a unique `admin_user.magedevgroup_sso_subject_id` column added at `setup:upgrade`), falling back to email, and created if absent (with a suffixed username on any local collision).
+3. JIT: the admin user is matched by IdP `sub` (stored on a unique `admin_user.dmlab_sso_subject_id` column added at `setup:upgrade`), falling back to email, and created if absent (with a suffixed username on any local collision).
 4. Roles are mapped from IdP groups and the admin backend session is established.
 5. The IdP-authenticated session satisfies Magento core 2FA (`Magento_TwoFactorAuth`), so users are not double-prompted.
 
@@ -86,7 +86,7 @@ With break-glass off and enforce on, a lockout is not recoverable from the UI �
 - Magento Open Source / Adobe Commerce **2.4.x**
 - PHP **8.3 – 8.5**
 
-## Part of the MageDevGroup identity suite
+## Part of the DMLab identity suite
 
 | Repo | Role |
 |------|------|
@@ -97,4 +97,4 @@ With break-glass off and enforce on, a lockout is not recoverable from the UI �
 
 ## License
 
-[OSL-3.0](LICENSE) © MageDevGroup. Commercial licensing and support: <https://magedevgroup.com>.
+[OSL-3.0](LICENSE) © DMLab. Commercial licensing and support: <https://dmlab.work>.

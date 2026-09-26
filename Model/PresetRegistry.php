@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Model;
+namespace DmLab\AdminSso\Model;
 
-use MageDevGroup\SsoCore\Api\ProviderPresetInterface;
+use DmLab\SsoCore\Api\ProviderPresetInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 /**

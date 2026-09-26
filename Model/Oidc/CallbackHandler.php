@@ -1,20 +1,20 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Model\Oidc;
+namespace DmLab\AdminSso\Model\Oidc;
 
-use MageDevGroup\AdminSso\Model\ActiveProviderResolver;
-use MageDevGroup\AdminSso\Model\Config;
-use MageDevGroup\SsoCore\Api\AuthorizationStateStorageInterface;
-use MageDevGroup\SsoCore\Api\Data\IdentityInterface;
-use MageDevGroup\SsoCore\Model\Oidc\DiscoveryClient;
-use MageDevGroup\SsoCore\Model\Oidc\IdentityFactory;
-use MageDevGroup\SsoCore\Model\Oidc\IdTokenValidator;
-use MageDevGroup\SsoCore\Model\Oidc\JwksClient;
-use MageDevGroup\SsoCore\Model\Oidc\TokenClient;
+use DmLab\AdminSso\Model\ActiveProviderResolver;
+use DmLab\AdminSso\Model\Config;
+use DmLab\SsoCore\Api\AuthorizationStateStorageInterface;
+use DmLab\SsoCore\Api\Data\IdentityInterface;
+use DmLab\SsoCore\Model\Oidc\DiscoveryClient;
+use DmLab\SsoCore\Model\Oidc\IdentityFactory;
+use DmLab\SsoCore\Model\Oidc\IdTokenValidator;
+use DmLab\SsoCore\Model\Oidc\JwksClient;
+use DmLab\SsoCore\Model\Oidc\TokenClient;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\Exception\LocalizedException;
 
@@ -66,9 +66,9 @@ class CallbackHandler
      *        one-time value persisted at start
      * @throws LocalizedException when SSO is disabled, no provider is active, the
      *         client id is unset, or the state is unknown/expired (replay).
-     * @throws \MageDevGroup\SsoCore\Exception\DiscoveryException
-     * @throws \MageDevGroup\SsoCore\Exception\TokenException
-     * @throws \MageDevGroup\SsoCore\Exception\IdTokenValidationException
+     * @throws \DmLab\SsoCore\Exception\DiscoveryException
+     * @throws \DmLab\SsoCore\Exception\TokenException
+     * @throws \DmLab\SsoCore\Exception\IdTokenValidationException
      */
     public function handle(string $code, string $state): IdentityInterface
     {

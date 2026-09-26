@@ -1,12 +1,12 @@
 <?php
 /**
- * Copyright © MageDevGroup. All rights reserved.
+ * Copyright © DMLab. All rights reserved.
  */
 declare(strict_types=1);
 
-namespace MageDevGroup\AdminSso\Plugin\Backend;
+namespace DmLab\AdminSso\Plugin\Backend;
 
-use MageDevGroup\AdminSso\Model\Config;
+use DmLab\AdminSso\Model\Config;
 use Magento\Backend\Model\Auth;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Exception\AuthenticationException;
@@ -15,7 +15,7 @@ use Magento\Framework\Exception\AuthenticationException;
  * Disables native username/password admin login while SSO is enforced.
  *
  * SSO logins never reach {@see Auth::login()} — they establish the backend
- * session directly via {@see \MageDevGroup\AdminSso\Model\AdminSessionCreator} —
+ * session directly via {@see \DmLab\AdminSso\Model\AdminSessionCreator} —
  * so this plugin only ever sees native credential logins. When enforce is on it
  * rejects them, unless the break-glass toggle is enabled and the request carries
  * the break-glass param: that guarded local-admin path keeps a lockout always
