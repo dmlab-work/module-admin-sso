@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Fixed: HTTP 500 ("Password is required field") on every admin page after a new admin's first SSO login.
+- Tested on Magento 2.4.9 and PHP 8.5.
+
 ## 0.2.0
 
 - **Break-glass is off by default** and limited to an explicit username allowlist (`break_glass_usernames`). Installs relying on the old default (on) now have it off: set Allow Break-Glass Login = Yes and list usernames to keep a recovery path. Installs that saved it as on lose the bypass until usernames are listed.
