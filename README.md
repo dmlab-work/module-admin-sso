@@ -86,7 +86,7 @@ bin/magento config:set dmlab_admin_sso/general/enforce_sso 0
 
 ## Requirements
 
-- Magento Open Source / Adobe Commerce **2.4.x**
+- Magento Open Source / Adobe Commerce **2.4.x** (tested on 2.4.9)
 - PHP **8.3 – 8.5**
 
 ## Part of the DMLab identity suite
