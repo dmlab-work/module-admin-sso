@@ -143,7 +143,11 @@ class UserProvisionerTest extends TestCase
             ->willReturn($this->collectionReturning($this->emptyUser()));
 
         $newUser = $this->createMock(User::class);
-        $this->userFactory->expects(self::once())->method('create')->willReturn($newUser);
+        $newUser->method('getId')->willReturn(42);
+        $loadedUser = $this->createStub(User::class);
+        $this->userFactory->expects(self::exactly(2))
+            ->method('create')
+            ->willReturnOnConsecutiveCalls($newUser, $loadedUser);
         $this->random->method('getRandomString')->willReturn('RANDOM');
 
         $newUser->expects(self::once())
@@ -159,10 +163,47 @@ class UserProvisionerTest extends TestCase
                 UserProvisioner::SUBJECT_FIELD => 'sub-9',
             ]);
         $this->userResource->expects(self::once())->method('save')->with($newUser);
+        $this->userResource->expects(self::once())->method('load')->with($loadedUser, 42);
 
         $identity = new Identity('sub-9', 'Jane.Doe@Example.com', 'Jane Doe', ['staff']);
 
-        self::assertSame($newUser, $this->provisioner->provision($identity));
+        self::assertSame($loadedUser, $this->provisioner->provision($identity));
+    }
+
+    /**
+     * The just-saved instance stays isObjectNew()=true, so later saves of it (role assignment,
+     * ACL refresh on the next request) would demand a password; a fresh load must be returned.
+     */
+    public function testCreatedUserIsReturnedFreshlyLoadedNotAsTheSavedInstance(): void
+    {
+        $this->collectionFactory->expects(self::exactly(3))
+            ->method('create')
+            ->willReturn($this->collectionReturning($this->emptyUser()));
+        $this->random->method('getRandomString')->willReturn('RANDOM');
+
+        $savedUser = $this->createStub(User::class);
+        $savedUser->method('getId')->willReturn(42);
+        $savedUser->method('isObjectNew')->willReturn(true);
+        $loadedUser = $this->createStub(User::class);
+        $this->userFactory->expects(self::exactly(2))
+            ->method('create')
+            ->willReturnOnConsecutiveCalls($savedUser, $loadedUser);
+
+        $loadedId = null;
+        $this->userResource->expects(self::once())->method('save')->with($savedUser);
+        $this->userResource->expects(self::once())
+            ->method('load')
+            ->willReturnCallback(function ($object, $id) use ($loadedUser, &$loadedId) {
+                self::assertSame($loadedUser, $object);
+                $loadedId = $id;
+                return $this->userResource;
+            });
+
+        $result = $this->provisioner->provision(new Identity('sub-9', 'jane@example.com', 'Jane Doe', []));
+
+        self::assertSame($loadedUser, $result);
+        self::assertNotSame($savedUser, $result);
+        self::assertSame(42, $loadedId);
     }
 
     /** A derived username already taken by an unrelated admin is suffixed, not rejected. */
@@ -178,7 +219,9 @@ class UserProvisionerTest extends TestCase
             );
 
         $newUser = $this->createStub(User::class);
-        $this->userFactory->expects(self::once())->method('create')->willReturn($newUser);
+        $this->userFactory->expects(self::exactly(2))
+            ->method('create')
+            ->willReturnOnConsecutiveCalls($newUser, $this->createStub(User::class));
         $this->userResource->expects(self::once())->method('save')->with($newUser);
         $this->random->method('getRandomString')->willReturn('RANDOM');
 
@@ -203,7 +246,9 @@ class UserProvisionerTest extends TestCase
             ->willReturn($this->collectionReturning($this->emptyUser()));
 
         $newUser = $this->createStub(User::class);
-        $this->userFactory->expects(self::once())->method('create')->willReturn($newUser);
+        $this->userFactory->expects(self::exactly(2))
+            ->method('create')
+            ->willReturnOnConsecutiveCalls($newUser, $this->createStub(User::class));
         $this->random->method('getRandomString')->willReturn('RANDOM');
 
         $captured = null;
@@ -503,7 +548,9 @@ class UserProvisionerTest extends TestCase
             ->willReturn($this->collectionReturning($this->emptyUser()));
 
         $newUser = $this->createStub(User::class);
-        $this->userFactory->expects(self::once())->method('create')->willReturn($newUser);
+        $this->userFactory->expects(self::exactly(2))
+            ->method('create')
+            ->willReturnOnConsecutiveCalls($newUser, $this->createStub(User::class));
         $this->userResource->expects(self::once())->method('save')->with($newUser);
         $this->random->method('getRandomString')->willReturn('RANDOM');
 

@@ -185,6 +185,7 @@ class UserProvisioner
      *
      * @param IdentityInterface $identity
      * @param string|null $email already-normalized email, or null
+     * @return User the persisted user, freshly loaded
      * @throws LocalizedException when no email is available to key the new user on
      */
     private function createUser(IdentityInterface $identity, ?string $email): User
@@ -211,7 +212,12 @@ class UserProvisioner
         ]);
         $this->userResource->save($user);
 
-        return $user;
+        // The saved instance keeps isObjectNew()=true (the user resource never resets it), so any later
+        // save (role assignment, ACL refresh) would treat it as new and demand a password. Return a clean load.
+        $created = $this->userFactory->create();
+        $this->userResource->load($created, $user->getId());
+
+        return $created;
     }
 
     /**
