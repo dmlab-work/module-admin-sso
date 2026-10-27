@@ -127,6 +127,20 @@ class ConfigTest extends TestCase
         self::assertSame([], $this->config([Config::XML_PATH_GROUP_ROLE_MAP => "  \n \n"])->getGroupRoleMap());
     }
 
+    public function testTrustIdpMfaReadsFlag(): void
+    {
+        self::assertTrue($this->config([Config::XML_PATH_TRUST_IDP_MFA => '1'])->isTrustIdpMfa());
+        self::assertFalse($this->config([])->isTrustIdpMfa());
+    }
+
+    public function testGetTrustedAcrValuesSplitsTrimsAndDeduplicates(): void
+    {
+        $config = $this->config([Config::XML_PATH_TRUSTED_ACR_VALUES => " urn:mfa \r\nphr, urn:mfa\n\n"]);
+
+        self::assertSame(['urn:mfa', 'phr'], $config->getTrustedAcrValues());
+        self::assertSame([], $this->config([])->getTrustedAcrValues());
+    }
+
     public function testGetDefaultRoleIdTrimsAndTreatsBlankAsNull(): void
     {
         self::assertSame('3', $this->config([Config::XML_PATH_DEFAULT_ROLE => ' 3 '])->getDefaultRoleId());

@@ -49,4 +49,13 @@ class DiConfigTest extends TestCase
         self::assertSame(1, $nodes->length);
         self::assertSame('0', trim($nodes->item(0)->textContent));
     }
+
+    public function testTrustIdpMfaIsOnByDefault(): void
+    {
+        // On, but 2FA is only skipped with amr/acr MFA evidence (IdpMfaPolicy).
+        $nodes = $this->xpath('etc/config.xml')->query('/config/default/dmlab_admin_sso/general/trust_idp_mfa');
+
+        self::assertSame(1, $nodes->length);
+        self::assertSame('1', trim($nodes->item(0)->textContent));
+    }
 }

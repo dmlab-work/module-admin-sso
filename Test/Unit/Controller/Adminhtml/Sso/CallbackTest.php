@@ -10,6 +10,7 @@ namespace DmLab\AdminSso\Test\Unit\Controller\Adminhtml\Sso;
 use DmLab\AdminSso\Controller\Adminhtml\Sso\Callback;
 use DmLab\AdminSso\Model\AdminSessionCreator;
 use DmLab\AdminSso\Model\Oidc\CallbackHandler;
+use DmLab\AdminSso\Model\Oidc\CallbackResult;
 use DmLab\AdminSso\Model\RoleAssigner;
 use DmLab\AdminSso\Model\UserProvisioner;
 use DmLab\SsoCore\Model\Data\Identity;
@@ -128,7 +129,7 @@ class CallbackTest extends TestCase
         $this->handler->expects(self::once())
             ->method('handle')
             ->with('the-code', 'the-state', null)
-            ->willReturn($identity);
+            ->willReturn(new CallbackResult($identity, ['amr' => ['mfa']]));
         $this->roleAssigner->expects(self::once())
             ->method('resolve')
             ->with($identity)
@@ -149,7 +150,8 @@ class CallbackTest extends TestCase
             ->willReturnCallback(function () use (&$calls): void {
                 $calls[] = 'assign';
             });
-        $this->sessionCreator->expects(self::once())->method('create')->with($user);
+        // The ID-token claims reach the session creator for the 2FA decision.
+        $this->sessionCreator->expects(self::once())->method('create')->with($user, ['amr' => ['mfa']]);
 
         $this->redirect->expects(self::once())->method('setPath')->with('adminhtml/dashboard');
         $this->messageManager->expects(self::never())->method('addErrorMessage');
@@ -182,7 +184,7 @@ class CallbackTest extends TestCase
 
         $this->handler->expects(self::once())
             ->method('handle')
-            ->willReturn(new Identity('user-1', 'user@example.com', 'U', ['eng']));
+            ->willReturn(new CallbackResult(new Identity('user-1', 'user@example.com', 'U', ['eng']), []));
         $this->roleAssigner->expects(self::once())
             ->method('resolve')
             ->willThrowException(new LocalizedException(
@@ -263,7 +265,7 @@ class CallbackTest extends TestCase
         $this->withParams(['code' => 'the-code', 'state' => 'the-state']);
 
         $identity = new Identity('user-1', null, null, []);
-        $this->handler->expects(self::once())->method('handle')->willReturn($identity);
+        $this->handler->expects(self::once())->method('handle')->willReturn(new CallbackResult($identity, []));
         $this->roleAssigner->method('resolve')->willReturn('5');
         $this->userProvisioner->expects(self::once())
             ->method('provision')

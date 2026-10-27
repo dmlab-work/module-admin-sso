@@ -95,6 +95,27 @@
                         <field id="enabled">1</field>
                     </depends>
                 </field>
+                <field id="trust_idp_mfa" translate="label comment" type="select" sortOrder="90"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Trust IdP MFA</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>
+                        <![CDATA[Skip Magento 2FA only when the ID token proves MFA (<code>amr</code> contains <code>mfa</code>, or a factor such as <code>otp</code>/<code>hwk</code> plus another method; or a trusted <code>acr</code>). Without that evidence Magento 2FA still applies.]]>
+                    </comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="trusted_acr_values" translate="label comment" type="textarea" sortOrder="95"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Trusted ACR Values</label>
+                    <comment>
+                        <![CDATA[Optional. <code>acr</code> values your IdP issues only after MFA, one per line (or comma-separated).]]>
+                    </comment>
+                    <depends>
+                        <field id="trust_idp_mfa">1</field>
+                    </depends>
+                </field>
             </group>
         </section>
     </system>

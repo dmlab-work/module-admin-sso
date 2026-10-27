@@ -46,15 +46,14 @@ class AdminSessionCreator
      * Log the given admin user into the current backend session.
      *
      * @param User $user persisted admin user to authenticate
+     * @param array<string,mixed> $claims validated ID-token claims; decide whether core 2FA is satisfied
      */
-    public function create(User $user): void
+    public function create(User $user, array $claims = []): void
     {
         $this->authSession->setUser($user);
         $this->authSession->processLogin();
 
-        // The IdP already authenticated (and MFA'd) the user — satisfy core 2FA
-        // for this SSO session so the admin is not challenged a second time.
-        $this->twoFactorSessionGranter->grant();
+        $this->twoFactorSessionGranter->grant($claims);
 
         $this->userResource->recordLogin($user);
 

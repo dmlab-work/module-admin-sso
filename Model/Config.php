@@ -45,6 +45,12 @@ class Config
     /** ACL role id assigned when no IdP group matches a mapping rule. */
     public const XML_PATH_DEFAULT_ROLE = 'dmlab_admin_sso/general/default_role';
 
+    /** Whether IdP-asserted MFA (`amr`/`acr`) satisfies Magento core 2FA. */
+    public const XML_PATH_TRUST_IDP_MFA = 'dmlab_admin_sso/general/trust_idp_mfa';
+
+    /** `acr` values accepted as MFA evidence, newline/comma-separated. */
+    public const XML_PATH_TRUSTED_ACR_VALUES = 'dmlab_admin_sso/general/trusted_acr_values';
+
     /**
      * @param ScopeConfigInterface $scopeConfig
      * @param EncryptorInterface $encryptor
@@ -166,6 +172,37 @@ class Config
     public function getDefaultRoleId(): ?string
     {
         return $this->readNonEmptyString(self::XML_PATH_DEFAULT_ROLE);
+    }
+
+    /**
+     * Whether IdP-asserted MFA may satisfy Magento core 2FA.
+     */
+    public function isTrustIdpMfa(): bool
+    {
+        return $this->scopeConfig->isSetFlag(self::XML_PATH_TRUST_IDP_MFA);
+    }
+
+    /**
+     * `acr` values accepted as MFA evidence: trimmed, unique, case kept (acr values are URIs/opaque).
+     *
+     * @return string[]
+     */
+    public function getTrustedAcrValues(): array
+    {
+        $raw = $this->scopeConfig->getValue(self::XML_PATH_TRUSTED_ACR_VALUES);
+        if (!is_string($raw)) {
+            return [];
+        }
+
+        $values = [];
+        foreach (preg_split('/[\r\n,]+/', $raw) ?: [] as $value) {
+            $value = trim($value);
+            if ($value !== '') {
+                $values[$value] = $value;
+            }
+        }
+
+        return array_values($values);
     }
 
     /**

@@ -11,7 +11,7 @@ The admin-login **capability core**: it logs staff into the Magento admin backen
 - **JIT admin-user creation** — matches an admin user by IdP issuer + `sub` (or IdP-verified email), creating one on first login.
 - **IdP-group → ACL-role mapping** — assigns Magento roles from IdP groups on every sign-in.
 - **Enforce SSO + break-glass** — block native password login (form and REST token) except for an explicit username allowlist.
-- **2FA interplay** — an IdP-authenticated session satisfies Magento core 2FA, avoiding a double prompt.
+- **2FA interplay** — an SSO login whose ID token proves MFA (`amr`/`acr`) satisfies Magento core 2FA, avoiding a double prompt.
 - **Provider-agnostic** — one core drives any OIDC IdP through a provider preset.
 
 ## Installation
@@ -49,6 +49,8 @@ Admin → Stores → Configuration → **DMLab → Admin SSO → General** (conf
 | Break-Glass Usernames | `break_glass_usernames` | Admin usernames, one per line or comma-separated; case-insensitive. |
 | Group to Role Map | `group_role_map` | IdP group → ACL role rules. See below. |
 | Default Role | `default_role` | Fallback role when no group matches; empty = refuse login. |
+| Trust IdP MFA | `trust_idp_mfa` | On by default; skips Magento 2FA only with MFA evidence. See below. |
+| Trusted ACR Values | `trusted_acr_values` | Optional `acr` values that count as MFA evidence. |
 
 A "Sign in with SSO" button appears on the admin login page when the module is enabled and a provider is selected, using the active preset's branding.
 
@@ -76,13 +78,22 @@ With break-glass off, a lockout is recoverable only by disabling `enforce_sso` v
 bin/magento config:set dmlab_admin_sso/general/enforce_sso 0
 ```
 
+## 2FA
+
+With `Magento_TwoFactorAuth` enabled, an SSO login skips Magento 2FA only when **Trust IdP MFA** is on and the validated ID token carries MFA evidence:
+
+- `amr` (RFC 8176) contains `mfa` or `mca`, or a possession/biometric factor (`otp`, `hwk`, `swk`, `sms`, `tel`, `sc`, `fpt`, `face`, …) plus another method (e.g. `["pwd","otp"]`); Okta and Entra send `mfa` after an MFA challenge;
+- or `acr` equals one of **Trusted ACR Values**.
+
+Otherwise (no `amr`/`acr`, e.g. Google, or password-only) Magento 2FA still applies. Trust IdP MFA = No always keeps Magento 2FA.
+
 ## How it works
 
 1. User clicks "Sign in with SSO" → `adminsso/sso/start` builds the OIDC auth URL (state + nonce + PKCE) via sso-core and the active preset, then redirects to the IdP.
 2. The IdP redirects back to `adminsso/sso/callback`, which validates `state` and the response issuer (RFC 9207 `iss`), exchanges the code, and normalizes claims into an `Identity` via sso-core.
 3. The ACL role is resolved from IdP groups; if none resolves, the login is refused here.
 4. JIT: the admin user is matched by IdP issuer + `sub` (stored on `admin_user.dmlab_sso_issuer` / `dmlab_sso_subject_id`, unique together, added at `setup:upgrade`), falling back to email — adopted only when the IdP marks it verified (`email_verified`), otherwise refused — and created if absent (with a suffixed username on any local collision). The role is assigned and the admin backend session is established like a native login: `backend_auth_user_login_success` fires and `Magento_Security` records the session (Admin Account Sharing applies).
-5. The IdP-authenticated session satisfies Magento core 2FA (`Magento_TwoFactorAuth`), so users are not double-prompted.
+5. If the IdP proved MFA, the session satisfies Magento core 2FA (`Magento_TwoFactorAuth`); otherwise the user completes Magento 2FA.
 
 ### Identity links and switching IdP
 

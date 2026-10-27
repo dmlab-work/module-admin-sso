@@ -14,6 +14,8 @@
                 <enforce_sso>0</enforce_sso>
                 <break_glass>0</break_glass>
                 <break_glass_usernames/>
+                <trust_idp_mfa>1</trust_idp_mfa>
+                <trusted_acr_values/>
             </general>
         </dmlab_admin_sso>
     </default>

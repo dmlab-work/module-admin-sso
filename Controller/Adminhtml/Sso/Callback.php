@@ -85,11 +85,12 @@ class Callback extends Auth implements HttpGetActionInterface
 
         try {
             $iss = $request->getParam('iss');
-            $identity = $this->callbackHandler->handle($code, $state, is_string($iss) ? $iss : null);
+            $result = $this->callbackHandler->handle($code, $state, is_string($iss) ? $iss : null);
+            $identity = $result->getIdentity();
             $roleId = $this->roleAssigner->resolve($identity);
             $user = $this->userProvisioner->provision($identity);
             $this->roleAssigner->assign($user, $roleId);
-            $this->adminSessionCreator->create($user);
+            $this->adminSessionCreator->create($user, $result->getClaims());
         } catch (LocalizedException $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
             return $this->toLogin();

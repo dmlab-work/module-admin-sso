@@ -35,3 +35,7 @@
 "Default Role","Default Role"
 "Role id when no group matches. Leave empty to refuse SSO login for unmapped users.","Role id when no group matches. Leave empty to refuse SSO login for unmapped users."
 "Admin SSO Section","Admin SSO Section"
+"Trust IdP MFA","Trust IdP MFA"
+"Skip Magento 2FA only when the ID token proves MFA (<code>amr</code> contains <code>mfa</code>, or a factor such as <code>otp</code>/<code>hwk</code> plus another method; or a trusted <code>acr</code>). Without that evidence Magento 2FA still applies.","Skip Magento 2FA only when the ID token proves MFA (<code>amr</code> contains <code>mfa</code>, or a factor such as <code>otp</code>/<code>hwk</code> plus another method; or a trusted <code>acr</code>). Without that evidence Magento 2FA still applies."
+"Trusted ACR Values","Trusted ACR Values"
+"Optional. <code>acr</code> values your IdP issues only after MFA, one per line (or comma-separated).","Optional. <code>acr</code> values your IdP issues only after MFA, one per line (or comma-separated)."

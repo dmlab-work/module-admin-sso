@@ -17,6 +17,7 @@ use DmLab\AdminSso\Model\Oidc\CallbackHandler;
 use DmLab\AdminSso\Model\PresetRegistry;
 use DmLab\AdminSso\Model\RoleAssigner;
 use DmLab\AdminSso\Model\Security\AdminSessionTracker;
+use DmLab\AdminSso\Model\TwoFactorAuth\IdpMfaPolicy;
 use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter;
 use DmLab\AdminSso\Model\UserProvisioner;
 use DmLab\SsoCore\Api\AuthorizationStateStorageInterface;
@@ -44,6 +45,8 @@ use Magento\Framework\Escaper;
 use Magento\Framework\Event\ManagerInterface as EventManager;
 use Magento\Framework\Math\Random;
 use Magento\Framework\Message\ManagerInterface as MessageManager;
+use Magento\Framework\Module\Manager as ModuleManager;
+use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\TestFramework\Unit\Helper\ObjectManager;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\User\Model\ResourceModel\User as UserResource;
@@ -53,6 +56,7 @@ use Magento\User\Model\User;
 use Magento\User\Model\UserFactory;
 use Magento\Authorization\Model\Role;
 use Magento\Authorization\Model\RoleFactory;
+use Magento\TwoFactorAuth\Api\TfaSessionInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -86,6 +90,7 @@ class AcceptanceFlowTest extends TestCase
         'dmlab_admin_sso/general/client_secret' => 'enc:' . self::CLIENT_SECRET,
         'dmlab_admin_sso/general/group_role_map' => 'admins=5',
         'dmlab_admin_sso/general/default_role' => '1',
+        'dmlab_admin_sso/general/trust_idp_mfa' => '1',
     ];
 
     public function testFullSsoLoginFlowFromConfigToSession(): void
@@ -112,8 +117,9 @@ class AcceptanceFlowTest extends TestCase
         self::assertNotSame('', $state, 'start() must emit a state param in the auth URL');
 
         // 4. Callback: consume the SAME state (round-trip) and produce the identity.
-        $identity = $this->callbackHandler($config, $resolver, $stateStorage, $metadata)
+        $callbackResult = $this->callbackHandler($config, $resolver, $stateStorage, $metadata)
             ->handle('auth-code', $state);
+        $identity = $callbackResult->getIdentity();
         self::assertSame(self::SUBJECT, $identity->getSubjectId());
         self::assertSame(self::EMAIL, $identity->getEmail());
         self::assertSame(['admins'], $identity->getGroups());
@@ -131,13 +137,18 @@ class AcceptanceFlowTest extends TestCase
         self::assertSame($user, $provisioned);
         $roleAssigner->assign($provisioned, $roleId);
 
-        // 7. Session establishment: user logged in, 2FA satisfied, login recorded.
+        // 7. Session establishment: user logged in, 2FA satisfied by the IdP's `amr` MFA, login recorded.
         // setUser is a magic setter routed through SessionManager::__call.
         $authSession = $this->createMock(AuthSession::class);
         $authSession->expects(self::once())->method('__call')->with('setUser', [$provisioned]);
         $authSession->expects(self::once())->method('processLogin');
-        $granter = $this->createMock(SessionGranter::class);
-        $granter->expects(self::once())->method('grant');
+        $tfaSession = $this->createMock(TfaSessionInterface::class);
+        $tfaSession->expects(self::once())->method('grantAccess');
+        $moduleManager = $this->createStub(ModuleManager::class);
+        $moduleManager->method('isEnabled')->willReturn(true);
+        $objectManager = $this->createStub(ObjectManagerInterface::class);
+        $objectManager->method('get')->willReturn($tfaSession);
+        $granter = new SessionGranter($moduleManager, $objectManager, new IdpMfaPolicy($config));
         $eventManager = $this->createMock(EventManager::class);
         $eventManager->expects(self::once())
             ->method('dispatch')
@@ -148,7 +159,7 @@ class AcceptanceFlowTest extends TestCase
         $sessionTracker->expects(self::once())->method('processLogin');
 
         (new AdminSessionCreator($authSession, $eventManager, $userResource, $granter, $sessionTracker))
-            ->create($provisioned);
+            ->create($provisioned, $callbackResult->getClaims());
 
         // The new user carries the create payload, the IdP subject link, and role 5.
         $createPayload = $this->createPayload($setDataCalls);
@@ -382,6 +393,7 @@ class AcceptanceFlowTest extends TestCase
             'email' => self::EMAIL,
             'name' => 'Jane Doe',
             'groups' => $groups,
+            'amr' => ['pwd', 'mfa'],
         ]);
 
         $backendUrl = $this->createStub(BackendUrlInterface::class);

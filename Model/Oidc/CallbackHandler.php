@@ -30,7 +30,7 @@ use Magento\Framework\Exception\LocalizedException;
  *
  * Provider-neutral: the concrete IdP arrives only through the active preset, so
  * this stays free of any provider-specific code (open/closed). It only produces the
- * verified identity; provisioning and the admin session happen in the controller.
+ * verified identity (+ claims); provisioning and the admin session happen in the controller.
  */
 class CallbackHandler
 {
@@ -62,7 +62,7 @@ class CallbackHandler
     }
 
     /**
-     * Complete the OIDC callback and return the verified identity.
+     * Complete the OIDC callback and return the verified identity with its ID-token claims.
      *
      * @param string $code authorization code returned by the IdP
      * @param string $state opaque state returned by the IdP; matched against the
@@ -75,7 +75,7 @@ class CallbackHandler
      * @throws \DmLab\SsoCore\Exception\TokenException
      * @throws \DmLab\SsoCore\Exception\IdTokenValidationException
      */
-    public function handle(string $code, string $state, ?string $iss = null): IdentityInterface
+    public function handle(string $code, string $state, ?string $iss = null): CallbackResult
     {
         if (!$this->config->isEnabled()) {
             throw new LocalizedException(__('Admin SSO is disabled.'));
@@ -123,7 +123,7 @@ class CallbackHandler
             $authState->getNonce()
         );
 
-        return $this->identityFactory->create($claims, $preset);
+        return new CallbackResult($this->identityFactory->create($claims, $preset), $claims);
     }
 
     /**

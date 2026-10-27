@@ -175,7 +175,9 @@ class CallbackHandlerTest extends TestCase
             ->with($claims, $preset)
             ->willReturn($identity);
 
-        self::assertSame($identity, $this->handler->handle(self::CODE, self::STATE, 'https://idp.example'));
+        $result = $this->handler->handle(self::CODE, self::STATE, 'https://idp.example');
+        self::assertSame($identity, $result->getIdentity());
+        self::assertSame($claims, $result->getClaims());
     }
 
     public function testIssuerMismatchStopsBeforeCodeExchange(): void
@@ -233,7 +235,7 @@ class CallbackHandlerTest extends TestCase
             ->willReturn(['sub' => 'user-1', 'iss' => 'https://idp.example']);
         $this->identityFactory->expects(self::once())->method('create')->willReturn($identity);
 
-        self::assertSame($identity, $this->handler->handle(self::CODE, self::STATE));
+        self::assertSame($identity, $this->handler->handle(self::CODE, self::STATE)->getIdentity());
     }
 
     public function testThrowsWhenDisabled(): void

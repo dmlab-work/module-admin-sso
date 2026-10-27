@@ -12,14 +12,13 @@ use Magento\Framework\ObjectManagerInterface;
 use Magento\TwoFactorAuth\Api\TfaSessionInterface;
 
 /**
- * Marks the current admin session as having passed Magento core 2FA.
+ * Marks the current admin session as having passed Magento core 2FA when the IdP
+ * proved MFA for this login ({@see IdpMfaPolicy}); otherwise core 2FA challenges as usual.
  *
- * The IdP already performed strong authentication (and its own MFA), so an SSO
- * login must not trigger a second 2FA challenge. Core 2FA gates every backend
- * request in {@see \Magento\TwoFactorAuth\Observer\ControllerActionPredispatch}
- * on {@see TfaSessionInterface::isGranted()}; granting it here satisfies that
- * check for the SSO session only. Native (and break-glass) logins never reach
- * this code, so they stay subject to the normal 2FA flow.
+ * Core 2FA gates every backend request in
+ * {@see \Magento\TwoFactorAuth\Observer\ControllerActionPredispatch} on
+ * {@see TfaSessionInterface::isGranted()}; granting it here satisfies that check for
+ * the SSO session only. Native (and break-glass) logins never reach this code.
  *
  * `Magento_TwoFactorAuth` is an optional dependency: it is resolved lazily via
  * the object manager and only when the module is enabled, so this core works
@@ -34,19 +33,25 @@ class SessionGranter
     /**
      * @param ModuleManager $moduleManager
      * @param ObjectManagerInterface $objectManager
+     * @param IdpMfaPolicy $mfaPolicy
      */
     public function __construct(
         private readonly ModuleManager $moduleManager,
-        private readonly ObjectManagerInterface $objectManager
+        private readonly ObjectManagerInterface $objectManager,
+        private readonly IdpMfaPolicy $mfaPolicy
     ) {
     }
 
     /**
-     * Grant the current session's 2FA when the 2FA module is enabled; no-op otherwise.
+     * Grant the current session's 2FA when the 2FA module is enabled and the IdP proved MFA.
+     *
+     * @param array<string,mixed> $claims validated ID-token claims of this login
      */
-    public function grant(): void
+    public function grant(array $claims): void
     {
-        if (!$this->moduleManager->isEnabled(self::TWO_FACTOR_AUTH_MODULE)) {
+        if (!$this->moduleManager->isEnabled(self::TWO_FACTOR_AUTH_MODULE)
+            || !$this->mfaPolicy->isSatisfied($claims)
+        ) {
             return;
         }
 
