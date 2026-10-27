@@ -7,7 +7,9 @@
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
-    <!-- Let the SSO start/callback actions dispatch before the admin is logged in. -->
-    <preference for="Magento\Backend\App\Action\Plugin\Authentication"
-                type="DmLab\AdminSso\App\Action\Plugin\Authentication"/>
+    <!-- Let the SSO start/callback actions dispatch before the admin is logged in.
+         A plugin, not a preference, so it coexists with Magento_AdminAdobeIms's preference. -->
+    <type name="Magento\Backend\App\Action\Plugin\Authentication">
+        <plugin name="dmlab_admin_sso_open_actions" type="DmLab\AdminSso\Plugin\Backend\OpenSsoActions"/>
+    </type>
 </config>
