@@ -15,10 +15,12 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^12.0",
-        "magento/module-two-factor-auth": "*"
+        "magento/module-two-factor-auth": "*",
+        "magento/module-security": "*"
     },
     "suggest": {
-        "magento/module-two-factor-auth": "Grants the 2FA session to SSO logins so the IdP MFA is not repeated"
+        "magento/module-two-factor-auth": "Grants the 2FA session to SSO logins so the IdP MFA is not repeated",
+        "magento/module-security": "Tracks SSO admin sessions and applies the Admin Account Sharing setting"
     },
     "autoload": {
         "files": [

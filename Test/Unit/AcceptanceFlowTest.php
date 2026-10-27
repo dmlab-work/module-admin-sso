@@ -16,6 +16,7 @@ use DmLab\AdminSso\Model\Oidc\AuthorizationStarter;
 use DmLab\AdminSso\Model\Oidc\CallbackHandler;
 use DmLab\AdminSso\Model\PresetRegistry;
 use DmLab\AdminSso\Model\RoleAssigner;
+use DmLab\AdminSso\Model\Security\AdminSessionTracker;
 use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter;
 use DmLab\AdminSso\Model\UserProvisioner;
 use DmLab\SsoCore\Api\AuthorizationStateStorageInterface;
@@ -143,7 +144,10 @@ class AcceptanceFlowTest extends TestCase
             ->with('backend_auth_user_login_success', ['user' => $provisioned]);
         $userResource->expects(self::once())->method('recordLogin')->with($provisioned);
 
-        (new AdminSessionCreator($authSession, $eventManager, $userResource, $granter))
+        $sessionTracker = $this->createMock(AdminSessionTracker::class);
+        $sessionTracker->expects(self::once())->method('processLogin');
+
+        (new AdminSessionCreator($authSession, $eventManager, $userResource, $granter, $sessionTracker))
             ->create($provisioned);
 
         // The new user carries the create payload, the IdP subject link, and role 5.

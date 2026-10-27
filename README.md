@@ -81,7 +81,7 @@ bin/magento config:set dmlab_admin_sso/general/enforce_sso 0
 1. User clicks "Sign in with SSO" → `adminsso/sso/start` builds the OIDC auth URL (state + nonce + PKCE) via sso-core and the active preset, then redirects to the IdP.
 2. The IdP redirects back to `adminsso/sso/callback`, which validates `state` and the response issuer (RFC 9207 `iss`), exchanges the code, and normalizes claims into an `Identity` via sso-core.
 3. The ACL role is resolved from IdP groups; if none resolves, the login is refused here.
-4. JIT: the admin user is matched by IdP issuer + `sub` (stored on `admin_user.dmlab_sso_issuer` / `dmlab_sso_subject_id`, unique together, added at `setup:upgrade`), falling back to email — adopted only when the IdP marks it verified (`email_verified`), otherwise refused — and created if absent (with a suffixed username on any local collision). The role is assigned and the admin backend session is established.
+4. JIT: the admin user is matched by IdP issuer + `sub` (stored on `admin_user.dmlab_sso_issuer` / `dmlab_sso_subject_id`, unique together, added at `setup:upgrade`), falling back to email — adopted only when the IdP marks it verified (`email_verified`), otherwise refused — and created if absent (with a suffixed username on any local collision). The role is assigned and the admin backend session is established like a native login: `backend_auth_user_login_success` fires and `Magento_Security` records the session (Admin Account Sharing applies).
 5. The IdP-authenticated session satisfies Magento core 2FA (`Magento_TwoFactorAuth`), so users are not double-prompted.
 
 ### Identity links and switching IdP

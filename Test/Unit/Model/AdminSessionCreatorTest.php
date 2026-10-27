@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace DmLab\AdminSso\Test\Unit\Model;
 
 use DmLab\AdminSso\Model\AdminSessionCreator;
+use DmLab\AdminSso\Model\Security\AdminSessionTracker;
 use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter as TwoFactorSessionGranter;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Framework\Event\ManagerInterface as EventManager;
@@ -30,6 +31,9 @@ class AdminSessionCreatorTest extends TestCase
     /** @var TwoFactorSessionGranter&MockObject */
     private $twoFactorSessionGranter;
 
+    /** @var AdminSessionTracker&MockObject */
+    private $adminSessionTracker;
+
     /** @var AdminSessionCreator */
     private AdminSessionCreator $creator;
 
@@ -41,12 +45,14 @@ class AdminSessionCreatorTest extends TestCase
         $this->eventManager = $this->createMock(EventManager::class);
         $this->userResource = $this->createMock(UserResource::class);
         $this->twoFactorSessionGranter = $this->createMock(TwoFactorSessionGranter::class);
+        $this->adminSessionTracker = $this->createMock(AdminSessionTracker::class);
 
         $this->creator = new AdminSessionCreator(
             $this->authSession,
             $this->eventManager,
             $this->userResource,
-            $this->twoFactorSessionGranter
+            $this->twoFactorSessionGranter,
+            $this->adminSessionTracker
         );
     }
 
@@ -64,6 +70,8 @@ class AdminSessionCreatorTest extends TestCase
             ->with('backend_auth_user_login_success', ['user' => $user]);
         // The SSO session satisfies core 2FA so the admin is not double-prompted.
         $this->twoFactorSessionGranter->expects(self::once())->method('grant');
+        // Magento_Security session tracking runs as on a native login (Auth::login plugin).
+        $this->adminSessionTracker->expects(self::once())->method('processLogin');
 
         $this->creator->create($user);
     }

@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace DmLab\AdminSso\Model;
 
+use DmLab\AdminSso\Model\Security\AdminSessionTracker;
 use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter as TwoFactorSessionGranter;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Framework\Event\ManagerInterface as EventManager;
@@ -19,9 +20,9 @@ use Magento\User\Model\User;
  *
  * Mirrors what {@see \Magento\Backend\Model\Auth::login()} does after credential
  * validation: it puts the user on the auth storage, runs `processLogin`
- * (regenerates the session id, loads the ACL), records the login, and fires the
- * `backend_auth_user_login_success` event so core listeners (2FA, notifications)
- * react as they would for a native login.
+ * (regenerates the session id, loads the ACL), records the login, fires the
+ * `backend_auth_user_login_success` event so core listeners react as they would for
+ * a native login, and registers the session with Magento_Security (account sharing).
  */
 class AdminSessionCreator
 {
@@ -30,12 +31,14 @@ class AdminSessionCreator
      * @param EventManager $eventManager
      * @param UserResource $userResource
      * @param TwoFactorSessionGranter $twoFactorSessionGranter
+     * @param AdminSessionTracker $adminSessionTracker
      */
     public function __construct(
         private readonly AuthSession $authSession,
         private readonly EventManager $eventManager,
         private readonly UserResource $userResource,
-        private readonly TwoFactorSessionGranter $twoFactorSessionGranter
+        private readonly TwoFactorSessionGranter $twoFactorSessionGranter,
+        private readonly AdminSessionTracker $adminSessionTracker
     ) {
     }
 
@@ -59,5 +62,7 @@ class AdminSessionCreator
             'backend_auth_user_login_success',
             ['user' => $user]
         );
+
+        $this->adminSessionTracker->processLogin();
     }
 }

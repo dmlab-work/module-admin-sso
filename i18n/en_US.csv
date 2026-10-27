@@ -13,6 +13,7 @@
 "An admin account with this email exists, but your identity provider did not verify the email address.","An admin account with this email exists, but your identity provider did not verify the email address."
 "An admin account with this email is already linked to a different identity.","An admin account with this email is already linked to a different identity."
 "The identity provider did not release an email address required to create an admin user.","The identity provider did not release an email address required to create an admin user."
+"All other open sessions for this account were terminated.","All other open sessions for this account were terminated."
 "-- Please Select --","-- Please Select --"
 "Admin sign-in requires SSO. Use the ""Sign in with SSO"" button on the login page.","Admin sign-in requires SSO. Use the ""Sign in with SSO"" button on the login page."
 "DMLab","DMLab"
