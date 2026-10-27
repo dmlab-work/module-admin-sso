@@ -6,7 +6,9 @@
         },
         "constraint": {
             "DMLAB_ADMIN_SSO_SUBJECT_ID": true,
-            "DMLAB_ADMIN_SSO_SUBJECT_ISSUER": true
+            "DMLAB_ADMIN_SSO_SUBJECT_ISSUER": true,
+            "ADMIN_USER_DMLAB_SSO_SUBJECT_ID_DMLAB_SSO_ISSUER": true,
+            "ADMIN_USER_DMLAB_SSO_SUBJECT_ID": true
         }
     }
 }
