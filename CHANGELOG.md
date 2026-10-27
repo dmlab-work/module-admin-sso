@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+
+- Added: **Sign Out of IdP on Logout** (`dmlab_admin_sso/general/idp_logout`, default No). Admin logout of an SSO session redirects to the IdP `end_session_endpoint` with `id_token_hint`; register `https://<admin-host>/<admin-path>/admin/auth/login/` as a post-logout redirect URI at the IdP. Falls back to local logout when unavailable.
+- Requires `dmlab/module-sso-core ^0.2.3`.
+
 ## 0.2.2
 
 - **Admins are bound to IdP issuer + subject** (new `admin_user.dmlab_sso_issuer`, unique with the subject; run `setup:upgrade`). Existing links adopt the issuer of their next SSO login. A new IdP/issuer never takes over a linked admin by email: clear `dmlab_sso_subject_id` / `dmlab_sso_issuer` to re-link.
