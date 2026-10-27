@@ -143,6 +143,19 @@ class RoleAssignerTest extends TestCase
         $this->assigner->resolve(new Identity('sub', 'u@example.com', 'U', ['engineering']));
     }
 
+    public function testRefusesWhenGroupsAreIncompleteEvenWithDefault(): void
+    {
+        // Entra groups overage: the groups claim was replaced by a distributed-claim reference.
+        $this->withRules(['admins' => '5'], '1');
+        $this->existingRoles('1', '5');
+        $this->userResource->expects(self::never())->method('save');
+
+        $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('Your identity provider sent too many groups to determine your admin role.');
+
+        $this->assigner->resolve(new Identity('sub', 'u@example.com', 'U', [], false, 'https://idp', ['groups'], true));
+    }
+
     public function testRefusesWhenResolvedRoleDoesNotExist(): void
     {
         // A typo'd / deleted role id must not be assigned (it would strip the link).

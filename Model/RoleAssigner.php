@@ -20,7 +20,8 @@ use Magento\User\Model\User;
  *
  * The rules come from admin config ({@see Config::getGroupRoleMap()}); sso-core's
  * {@see MappingEngine} resolves the groups against them, falling back to the
- * configured default role when nothing matches. A Magento admin user holds a
+ * configured default role when nothing matches. Incomplete groups (an IdP overage,
+ * sent as a distributed claim) refuse the login. A Magento admin user holds a
  * single role, so the first resolved role wins. When neither a rule nor a default
  * applies the SSO login is refused — the stored role is never demoted
  * (deprovisioning is SCIM's job).
@@ -53,10 +54,21 @@ class RoleAssigner
      *
      * @param IdentityInterface $identity verified identity from sso-core
      * @return string
-     * @throws LocalizedException when no rule or default applies, or the role does not exist
+     * @throws LocalizedException when the groups are incomplete (IdP overage), no rule or default
+     *         applies, or the role does not exist
      */
     public function resolve(IdentityInterface $identity): string
     {
+        // Incomplete groups must not fall back to the default role or drop a mapped one.
+        if ($identity->hasDistributedGroups()) {
+            throw new LocalizedException(
+                __(
+                    'Your identity provider sent too many groups to determine your admin role. '
+                    . 'Ask your administrator to limit the groups sent to this application.'
+                )
+            );
+        }
+
         $roles = $this->mappingEngine->resolve(
             $identity->getGroups(),
             $this->config->getGroupRoleMap(),

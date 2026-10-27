@@ -7,6 +7,7 @@
 "No admin SSO provider is configured.","No admin SSO provider is configured."
 "The admin SSO client ID is not configured.","The admin SSO client ID is not configured."
 "The SSO sign-in session is invalid or has expired. Please try again.","The SSO sign-in session is invalid or has expired. Please try again."
+"Your identity provider sent too many groups to determine your admin role. Ask your administrator to limit the groups sent to this application.","Your identity provider sent too many groups to determine your admin role. Ask your administrator to limit the groups sent to this application."
 "No admin role is mapped for your identity provider groups. Contact your administrator.","No admin role is mapped for your identity provider groups. Contact your administrator."
 "The identity provider did not identify its issuer.","The identity provider did not identify its issuer."
 "This admin account is disabled. Contact your administrator.","This admin account is disabled. Contact your administrator."

@@ -64,7 +64,7 @@ admins=1
 support-team=4
 ```
 
-Roles are (re)assigned on every login, so IdP group changes take effect at next sign-in. An identity whose groups match no rule gets `default_role`. If that is empty (or the role id does not exist) the SSO login is refused before any admin is created or linked; the stored role of an existing admin is never demoted — deprovisioning is SCIM's job.
+Roles are (re)assigned on every login, so IdP group changes take effect at next sign-in. An identity whose groups match no rule gets `default_role`. If that is empty (or the role id does not exist) the SSO login is refused before any admin is created or linked; the stored role of an existing admin is never demoted — deprovisioning is SCIM's job. If the IdP sends the groups as a distributed claim (`_claim_names`, e.g. Entra groups overage), the groups are incomplete and the login is refused too.
 
 ## Enforce SSO + break-glass
 
