@@ -1,10 +1,12 @@
 {
     "admin_user": {
         "column": {
-            "dmlab_sso_subject_id": true
+            "dmlab_sso_subject_id": true,
+            "dmlab_sso_issuer": true
         },
         "constraint": {
-            "DMLAB_ADMIN_SSO_SUBJECT_ID": true
+            "DMLAB_ADMIN_SSO_SUBJECT_ID": true,
+            "DMLAB_ADMIN_SSO_SUBJECT_ISSUER": true
         }
     }
 }

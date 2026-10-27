@@ -8,7 +8,7 @@ The admin-login **capability core**: it logs staff into the Magento admin backen
 
 ## Features
 
-- **JIT admin-user creation** — matches an admin user by IdP `sub` (or IdP-verified email), creating one on first login.
+- **JIT admin-user creation** — matches an admin user by IdP issuer + `sub` (or IdP-verified email), creating one on first login.
 - **IdP-group → ACL-role mapping** — assigns Magento roles from IdP groups on every sign-in.
 - **Enforce SSO + break-glass** — block native password login (form and REST token) except for an explicit username allowlist.
 - **2FA interplay** — an IdP-authenticated session satisfies Magento core 2FA, avoiding a double prompt.
@@ -81,8 +81,16 @@ bin/magento config:set dmlab_admin_sso/general/enforce_sso 0
 1. User clicks "Sign in with SSO" → `adminsso/sso/start` builds the OIDC auth URL (state + nonce + PKCE) via sso-core and the active preset, then redirects to the IdP.
 2. The IdP redirects back to `adminsso/sso/callback`, which validates `state` and the response issuer (RFC 9207 `iss`), exchanges the code, and normalizes claims into an `Identity` via sso-core.
 3. The ACL role is resolved from IdP groups; if none resolves, the login is refused here.
-4. JIT: the admin user is matched by IdP `sub` (stored on a unique `admin_user.dmlab_sso_subject_id` column added at `setup:upgrade`), falling back to email — adopted only when the IdP marks it verified (`email_verified`), otherwise refused — and created if absent (with a suffixed username on any local collision). The role is assigned and the admin backend session is established.
+4. JIT: the admin user is matched by IdP issuer + `sub` (stored on `admin_user.dmlab_sso_issuer` / `dmlab_sso_subject_id`, unique together, added at `setup:upgrade`), falling back to email — adopted only when the IdP marks it verified (`email_verified`), otherwise refused — and created if absent (with a suffixed username on any local collision). The role is assigned and the admin backend session is established.
 5. The IdP-authenticated session satisfies Magento core 2FA (`Magento_TwoFactorAuth`), so users are not double-prompted.
+
+### Identity links and switching IdP
+
+An admin is linked to one IdP identity (issuer + `sub`). Links created before the issuer was stored are bound to the issuer of their next SSO login. A different issuer (new IdP, tenant or authorization server) never matches an existing link: its users go through the normal email adoption / JIT rules, and email adoption only applies to unlinked admins. To move linked admins to a new IdP, clear their link first:
+
+```sql
+UPDATE admin_user SET dmlab_sso_subject_id = NULL, dmlab_sso_issuer = NULL WHERE user_id IN (...);
+```
 
 ## Requirements
 

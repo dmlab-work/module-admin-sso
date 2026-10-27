@@ -150,6 +150,7 @@ class AcceptanceFlowTest extends TestCase
         $createPayload = $this->createPayload($setDataCalls);
         self::assertSame(self::EMAIL, $createPayload['email']);
         self::assertSame(self::SUBJECT, $createPayload[UserProvisioner::SUBJECT_FIELD]);
+        self::assertSame('https://idp.example', $createPayload[UserProvisioner::ISSUER_FIELD]);
         self::assertContains(['role_id', 5], $setDataCalls, 'admins group must assign ACL role 5');
     }
 

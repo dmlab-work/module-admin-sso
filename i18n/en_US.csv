@@ -8,6 +8,7 @@
 "The admin SSO client ID is not configured.","The admin SSO client ID is not configured."
 "The SSO sign-in session is invalid or has expired. Please try again.","The SSO sign-in session is invalid or has expired. Please try again."
 "No admin role is mapped for your identity provider groups. Contact your administrator.","No admin role is mapped for your identity provider groups. Contact your administrator."
+"The identity provider did not identify its issuer.","The identity provider did not identify its issuer."
 "This admin account is disabled. Contact your administrator.","This admin account is disabled. Contact your administrator."
 "An admin account with this email exists, but your identity provider did not verify the email address.","An admin account with this email exists, but your identity provider did not verify the email address."
 "An admin account with this email is already linked to a different identity.","An admin account with this email is already linked to a different identity."

@@ -18,11 +18,14 @@ use Magento\User\Model\UserFactory;
 /**
  * Just-in-time provisioning of Magento admin users from a verified OIDC identity.
  *
- * Resolution order mirrors the suite contract: match by the stored IdP subject
- * (`sub`) first — the stable re-login key — then fall back to email, adopting an
- * existing local admin and linking it to the subject on first SSO login. When
- * neither matches, a fresh admin user is created (JIT). Email adoption requires
- * an IdP-verified email; an unverified match is refused, never linked.
+ * Resolution order mirrors the suite contract: match by the stored IdP issuer +
+ * subject (`iss`, `sub`) first — `sub` is unique only per issuer — then fall back to
+ * email, adopting an existing local admin and linking it to the identity on first
+ * SSO login. When neither matches, a fresh admin user is created (JIT). Email
+ * adoption requires an IdP-verified email; an unverified match is refused, never linked.
+ *
+ * A link stored before the issuer was recorded (empty issuer) is bound to the issuer
+ * of the first login presenting its subject, then requires an exact match.
  *
  * Provider-neutral: the identity is already normalized by sso-core, so no
  * IdP-specific claim handling lives here. Role assignment is a later task; this
@@ -35,6 +38,9 @@ class UserProvisioner
 {
     /** admin_user column holding the IdP subject link (see etc/db_schema.xml). */
     public const SUBJECT_FIELD = 'dmlab_sso_subject_id';
+
+    /** admin_user column holding the issuer the subject belongs to. */
+    public const ISSUER_FIELD = 'dmlab_sso_issuer';
 
     /** Lastname used when the IdP releases no name / only a single-word name. */
     private const DEFAULT_LAST_NAME = 'SSO';
@@ -64,14 +70,21 @@ class UserProvisioner
      *
      * @param IdentityInterface $identity verified identity from sso-core
      * @return User the linked or newly created admin user (persisted)
-     * @throws LocalizedException when a matched admin is disabled, an email match is
-     *         unverified, or a new user must be created but the IdP released no email
+     * @throws LocalizedException when the identity has no issuer, a matched admin is disabled, an email
+     *         match is unverified, or a new user must be created but the IdP released no email
      */
     public function provision(IdentityInterface $identity): User
     {
-        $bySubject = $this->loadByField(self::SUBJECT_FIELD, $identity->getSubjectId());
+        if ($identity->getIssuer() === '') {
+            throw new LocalizedException(__('The identity provider did not identify its issuer.'));
+        }
+
+        $bySubject = $this->loadBySubject($identity);
         if ($bySubject !== null) {
             $this->assertActive($bySubject);
+            if ((string)$bySubject->getData(self::ISSUER_FIELD) === '') {
+                $this->linkIdentity($bySubject, $identity);
+            }
             return $bySubject;
         }
 
@@ -82,11 +95,34 @@ class UserProvisioner
                 $this->assertEmailVerified($identity);
                 $this->assertActive($byEmail);
                 $this->assertAdoptable($byEmail);
-                return $this->linkSubject($byEmail, $identity->getSubjectId());
+                return $this->linkIdentity($byEmail, $identity);
             }
         }
 
         return $this->createUser($identity, $email);
+    }
+
+    /**
+     * Admin linked to the identity's issuer + subject, else a pre-issuer link with the same subject.
+     *
+     * @param IdentityInterface $identity
+     */
+    private function loadBySubject(IdentityInterface $identity): ?User
+    {
+        $collection = $this->userCollectionFactory->create();
+        $collection->addFieldToFilter(self::SUBJECT_FIELD, $identity->getSubjectId());
+        $collection->addFieldToFilter(
+            self::ISSUER_FIELD,
+            [['eq' => $identity->getIssuer()], ['null' => true], ['eq' => '']]
+        );
+        // An exact issuer sorts before ''/NULL, so it wins over a pre-issuer link.
+        $collection->setOrder(self::ISSUER_FIELD, 'DESC');
+        $collection->setPageSize(1);
+
+        /** @var User $user */
+        $user = $collection->getFirstItem();
+
+        return $user->getId() ? $user : null;
     }
 
     /**
@@ -147,10 +183,10 @@ class UserProvisioner
     /**
      * Guard email-based adoption against account takeover: only an admin that
      * carries no IdP subject link may be adopted by email. A non-empty link here
-     * means the email belongs to an admin already bound to a *different* subject —
-     * the matching subject would have been resolved by {@see self::provision()}'s
-     * subject lookup — so a second identity that merely shares the email must not
-     * rebind or hijack it. Email is not a stable identifier; the subject is.
+     * means the email belongs to an admin already bound to a *different* identity
+     * (another subject, or the same subject at another issuer) — so a second identity
+     * that merely shares the email must not rebind or hijack it. Email is not a
+     * stable identifier; issuer + subject is.
      *
      * @param User $user admin matched by email
      * @throws LocalizedException when the account is already linked to another subject
@@ -165,16 +201,17 @@ class UserProvisioner
     }
 
     /**
-     * Adopt an existing local admin by storing the IdP subject on it.
+     * Bind an admin to the identity by storing its issuer + subject.
      *
-     * Future logins then match by subject rather than email.
+     * Future logins then match by issuer + subject rather than email.
      *
      * @param User $user
-     * @param string $subjectId
+     * @param IdentityInterface $identity
      */
-    private function linkSubject(User $user, string $subjectId): User
+    private function linkIdentity(User $user, IdentityInterface $identity): User
     {
-        $user->setData(self::SUBJECT_FIELD, $subjectId);
+        $user->setData(self::SUBJECT_FIELD, $identity->getSubjectId());
+        $user->setData(self::ISSUER_FIELD, $identity->getIssuer());
         $this->userResource->save($user);
 
         return $user;
@@ -209,6 +246,7 @@ class UserProvisioner
             'is_active' => 1,
             'interface_locale' => 'en_US',
             self::SUBJECT_FIELD => $identity->getSubjectId(),
+            self::ISSUER_FIELD => $identity->getIssuer(),
         ]);
         $this->userResource->save($user);
 

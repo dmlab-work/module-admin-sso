@@ -22,6 +22,8 @@ use PHPUnit\Framework\TestCase;
 
 class UserProvisionerTest extends TestCase
 {
+    private const ISSUER = 'https://idp.example';
+
     /** @var UserFactory&MockObject */
     private $userFactory;
 
@@ -87,7 +89,11 @@ class UserProvisionerTest extends TestCase
         $user = $this->createStub(User::class);
         $user->method('getId')->willReturn($id);
         $user->method('getData')->willReturnCallback(
-            static fn ($field) => $field === 'is_active' ? 1 : null
+            static fn ($field) => match ($field) {
+                'is_active' => 1,
+                UserProvisioner::ISSUER_FIELD => self::ISSUER,
+                default => null,
+            }
         );
 
         return $user;
@@ -104,7 +110,7 @@ class UserProvisionerTest extends TestCase
         $this->userResource->expects(self::never())->method('save');
         $this->userFactory->expects(self::never())->method('create');
 
-        $identity = new Identity('sub-1', 'user@example.com', 'User One', ['admins']);
+        $identity = new Identity('sub-1', 'user@example.com', 'User One', ['admins'], false, self::ISSUER);
 
         self::assertSame($existing, $this->provisioner->provision($identity));
     }
@@ -116,10 +122,14 @@ class UserProvisionerTest extends TestCase
         $existing->method('getData')->willReturnCallback(
             static fn ($field) => $field === 'is_active' ? 1 : null
         );
-        // Email collision policy: adopt the local admin and stamp the subject on it.
-        $existing->expects(self::once())
+        // Email collision policy: adopt the local admin and stamp the issuer + subject on it.
+        $linked = [];
+        $existing->expects(self::exactly(2))
             ->method('setData')
-            ->with(UserProvisioner::SUBJECT_FIELD, 'sub-1');
+            ->willReturnCallback(function ($key, $value) use (&$linked, $existing) {
+                $linked[$key] = $value;
+                return $existing;
+            });
 
         $this->collectionFactory->expects(self::exactly(2))
             ->method('create')
@@ -130,9 +140,13 @@ class UserProvisionerTest extends TestCase
         $this->userResource->expects(self::once())->method('save')->with($existing);
         $this->userFactory->expects(self::never())->method('create');
 
-        $identity = new Identity('sub-1', 'User@Example.com', 'User One', [], true);
+        $identity = new Identity('sub-1', 'User@Example.com', 'User One', [], true, self::ISSUER);
 
         self::assertSame($existing, $this->provisioner->provision($identity));
+        self::assertSame(
+            [UserProvisioner::SUBJECT_FIELD => 'sub-1', UserProvisioner::ISSUER_FIELD => self::ISSUER],
+            $linked
+        );
     }
 
     public function testCreatesNewUserWhenNoneMatch(): void
@@ -161,11 +175,12 @@ class UserProvisionerTest extends TestCase
                 'is_active' => 1,
                 'interface_locale' => 'en_US',
                 UserProvisioner::SUBJECT_FIELD => 'sub-9',
+                UserProvisioner::ISSUER_FIELD => self::ISSUER,
             ]);
         $this->userResource->expects(self::once())->method('save')->with($newUser);
         $this->userResource->expects(self::once())->method('load')->with($loadedUser, 42);
 
-        $identity = new Identity('sub-9', 'Jane.Doe@Example.com', 'Jane Doe', ['staff']);
+        $identity = new Identity('sub-9', 'Jane.Doe@Example.com', 'Jane Doe', ['staff'], false, self::ISSUER);
 
         self::assertSame($loadedUser, $this->provisioner->provision($identity));
     }
@@ -199,7 +214,9 @@ class UserProvisionerTest extends TestCase
                 return $this->userResource;
             });
 
-        $result = $this->provisioner->provision(new Identity('sub-9', 'jane@example.com', 'Jane Doe', []));
+        $result = $this->provisioner->provision(
+            new Identity('sub-9', 'jane@example.com', 'Jane Doe', [], false, self::ISSUER)
+        );
 
         self::assertSame($loadedUser, $result);
         self::assertNotSame($savedUser, $result);
@@ -233,7 +250,9 @@ class UserProvisionerTest extends TestCase
             }
         );
 
-        $this->provisioner->provision(new Identity('sub-9', 'Jane.Doe@Example.com', 'Jane Doe', []));
+        $this->provisioner->provision(
+            new Identity('sub-9', 'Jane.Doe@Example.com', 'Jane Doe', [], false, self::ISSUER)
+        );
 
         self::assertSame('jane.doe2', $captured['username']);
     }
@@ -260,7 +279,7 @@ class UserProvisionerTest extends TestCase
         );
         $this->userResource->expects(self::once())->method('save')->with($newUser);
 
-        $identity = new Identity('sub-3', 'root@example.com', 'Madonna', []);
+        $identity = new Identity('sub-3', 'root@example.com', 'Madonna', [], false, self::ISSUER);
         $this->provisioner->provision($identity);
 
         self::assertSame('Madonna', $captured['firstname']);
@@ -277,7 +296,7 @@ class UserProvisionerTest extends TestCase
         $this->userFactory->expects(self::never())->method('create');
         $this->userResource->expects(self::never())->method('save');
 
-        $identity = new Identity('sub-x', null, 'No Email', []);
+        $identity = new Identity('sub-x', null, 'No Email', [], false, self::ISSUER);
 
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage(
@@ -285,6 +304,72 @@ class UserProvisionerTest extends TestCase
         );
 
         $this->provisioner->provision($identity);
+    }
+
+    /** A link stored before issuers were recorded is bound to the first matching login's issuer. */
+    public function testBindsIssuerOnPreIssuerSubjectLink(): void
+    {
+        $legacy = $this->createMock(User::class);
+        $legacy->method('getId')->willReturn(5);
+        $legacy->method('getData')->willReturnCallback(
+            static fn ($field) => match ($field) {
+                'is_active' => 1,
+                UserProvisioner::SUBJECT_FIELD => 'sub-1',
+                default => null,
+            }
+        );
+        $linked = [];
+        $legacy->expects(self::exactly(2))
+            ->method('setData')
+            ->willReturnCallback(function ($key, $value) use (&$linked, $legacy) {
+                $linked[$key] = $value;
+                return $legacy;
+            });
+
+        $this->collectionFactory->expects(self::once())
+            ->method('create')
+            ->willReturn($this->collectionReturning($legacy));
+        $this->userResource->expects(self::once())->method('save')->with($legacy);
+        $this->userFactory->expects(self::never())->method('create');
+
+        $identity = new Identity('sub-1', 'user@example.com', 'User One', [], false, self::ISSUER);
+
+        self::assertSame($legacy, $this->provisioner->provision($identity));
+        self::assertSame(self::ISSUER, $linked[UserProvisioner::ISSUER_FIELD]);
+    }
+
+    /** A disabled pre-issuer link is refused before the issuer is bound. */
+    public function testDoesNotBindIssuerOnDisabledPreIssuerLink(): void
+    {
+        $legacy = $this->createMock(User::class);
+        $legacy->method('getId')->willReturn(5);
+        $legacy->method('getData')->willReturnCallback(
+            static fn ($field) => $field === 'is_active' ? 0 : null
+        );
+        $legacy->expects(self::never())->method('setData');
+
+        $this->collectionFactory->expects(self::once())
+            ->method('create')
+            ->willReturn($this->collectionReturning($legacy));
+        $this->userResource->expects(self::never())->method('save');
+        $this->userFactory->expects(self::never())->method('create');
+
+        $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('This admin account is disabled. Contact your administrator.');
+
+        $this->provisioner->provision(new Identity('sub-1', 'user@example.com', 'U', [], false, self::ISSUER));
+    }
+
+    public function testRefusesIdentityWithoutIssuer(): void
+    {
+        $this->collectionFactory->expects(self::never())->method('create');
+        $this->userResource->expects(self::never())->method('save');
+        $this->userFactory->expects(self::never())->method('create');
+
+        $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('The identity provider did not identify its issuer.');
+
+        $this->provisioner->provision(new Identity('sub-1', 'user@example.com', 'User One', []));
     }
 
     /** A matched-by-subject admin who was deactivated must be refused. */
@@ -305,7 +390,7 @@ class UserProvisionerTest extends TestCase
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('This admin account is disabled. Contact your administrator.');
 
-        $this->provisioner->provision(new Identity('sub-1', 'user@example.com', 'User One', []));
+        $this->provisioner->provision(new Identity('sub-1', 'user@example.com', 'User One', [], false, self::ISSUER));
     }
 
     /** A matched-by-email admin who was deactivated must be refused before the subject is linked. */
@@ -330,7 +415,7 @@ class UserProvisionerTest extends TestCase
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('This admin account is disabled. Contact your administrator.');
 
-        $this->provisioner->provision(new Identity('sub-1', 'user@example.com', 'User One', [], true));
+        $this->provisioner->provision(new Identity('sub-1', 'user@example.com', 'User One', [], true, self::ISSUER));
     }
 
     /**
@@ -365,7 +450,7 @@ class UserProvisionerTest extends TestCase
             'An admin account with this email is already linked to a different identity.'
         );
 
-        $this->provisioner->provision(new Identity('sub-NEW', 'user@example.com', 'User One', [], true));
+        $this->provisioner->provision(new Identity('sub-NEW', 'user@example.com', 'User One', [], true, self::ISSUER));
     }
 
     /** Subject lookup runs first with the subject column; email lookup uses the normalized email. */
@@ -397,10 +482,15 @@ class UserProvisionerTest extends TestCase
         $this->userFactory->expects(self::never())->method('create');
 
         // Mixed-case email on the identity must be lower-cased for the lookup.
-        $this->provisioner->provision(new Identity('sub-1', 'User@Example.COM', 'User One', [], true));
+        $this->provisioner->provision(new Identity('sub-1', 'User@Example.COM', 'User One', [], true, self::ISSUER));
 
         self::assertSame([UserProvisioner::SUBJECT_FIELD, 'sub-1'], $filters[0]);
-        self::assertSame(['email', 'user@example.com'], $filters[1]);
+        // Exact issuer, or a link stored before issuers were recorded.
+        self::assertSame(
+            [UserProvisioner::ISSUER_FIELD, [['eq' => self::ISSUER], ['null' => true], ['eq' => '']]],
+            $filters[1]
+        );
+        self::assertSame(['email', 'user@example.com'], $filters[2]);
     }
 
     /** Names/username longer than the admin_user columns are truncated to their limits. */
@@ -411,7 +501,9 @@ class UserProvisionerTest extends TestCase
                 'sub-9',
                 str_repeat('x', 50) . '@example.com',
                 str_repeat('a', 40) . ' ' . str_repeat('b', 40),
-                []
+                [],
+                false,
+                self::ISSUER
             )
         );
 
@@ -425,7 +517,7 @@ class UserProvisionerTest extends TestCase
     {
         // '中' is 3 bytes in UTF-8; a byte-based cut at 32 would split the 11th char.
         $captured = $this->captureCreatedUserData(
-            new Identity('sub-9', 'user@example.com', str_repeat('中', 40), [])
+            new Identity('sub-9', 'user@example.com', str_repeat('中', 40), [], false, self::ISSUER)
         );
 
         self::assertSame(32, mb_strlen($captured['firstname']));
@@ -436,7 +528,7 @@ class UserProvisionerTest extends TestCase
     public function testUsernameFallsBackToSubjectWhenEmailLocalPartEmpty(): void
     {
         $captured = $this->captureCreatedUserData(
-            new Identity('sub-42', '@example.com', 'Jane Doe', [])
+            new Identity('sub-42', '@example.com', 'Jane Doe', [], false, self::ISSUER)
         );
 
         self::assertSame('sub-42', $captured['username']);
@@ -451,6 +543,7 @@ class UserProvisionerTest extends TestCase
     {
         $identity = $this->createStub(IdentityInterface::class);
         $identity->method('getSubjectId')->willReturn($subject);
+        $identity->method('getIssuer')->willReturn(self::ISSUER);
         $identity->method('getEmail')->willReturn($email);
         $identity->method('getName')->willReturn('User One');
         $identity->method('getGroups')->willReturn([]);
@@ -466,9 +559,7 @@ class UserProvisionerTest extends TestCase
         $existing->method('getData')->willReturnCallback(
             static fn ($field) => $field === 'is_active' ? 1 : null
         );
-        $existing->expects(self::once())
-            ->method('setData')
-            ->with(UserProvisioner::SUBJECT_FIELD, 'sub-1');
+        $existing->expects(self::exactly(2))->method('setData')->willReturnSelf();
 
         $this->collectionFactory->expects(self::exactly(2))
             ->method('create')
