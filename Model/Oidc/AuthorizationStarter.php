@@ -86,7 +86,8 @@ class AuthorizationStarter
             $clientId,
             $this->callbackUrl(),
             $preset->getDefaultScopes(),
-            $extraParams
+            $extraParams,
+            $metadata->getIssuer()
         );
 
         $this->stateStorage->save($request);

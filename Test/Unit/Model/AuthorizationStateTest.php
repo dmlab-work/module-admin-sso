@@ -15,11 +15,17 @@ class AuthorizationStateTest extends TestCase
 {
     public function testExposesItsValues(): void
     {
-        $state = new AuthorizationState('the-state', 'the-nonce', 'the-verifier');
+        $state = new AuthorizationState('the-state', 'the-nonce', 'the-verifier', 'https://idp.example');
 
         self::assertInstanceOf(AuthorizationStateInterface::class, $state);
         self::assertSame('the-state', $state->getState());
         self::assertSame('the-nonce', $state->getNonce());
         self::assertSame('the-verifier', $state->getCodeVerifier());
+        self::assertSame('https://idp.example', $state->getIssuer());
+    }
+
+    public function testIssuerDefaultsToEmpty(): void
+    {
+        self::assertSame('', (new AuthorizationState('s', 'n', 'v'))->getIssuer());
     }
 }

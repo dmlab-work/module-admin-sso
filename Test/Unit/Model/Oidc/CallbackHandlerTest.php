@@ -14,15 +14,15 @@ use DmLab\AdminSso\Model\Oidc\CallbackHandler;
 use DmLab\SsoCore\Api\AuthorizationStateStorageInterface;
 use DmLab\SsoCore\Api\DiscoveryIssuerPolicyInterface;
 use DmLab\SsoCore\Api\ProviderPresetInterface;
+use DmLab\SsoCore\Exception\AuthorizationResponseException;
 use DmLab\SsoCore\Model\Data\Identity;
+use DmLab\SsoCore\Model\Oidc\AuthorizationResponseValidator;
 use DmLab\SsoCore\Model\Oidc\DiscoveryClient;
 use DmLab\SsoCore\Model\Oidc\IdentityFactory;
 use DmLab\SsoCore\Model\Oidc\IdTokenValidator;
-use DmLab\SsoCore\Model\Oidc\JwksClient;
 use DmLab\SsoCore\Model\Oidc\ProviderMetadata;
 use DmLab\SsoCore\Model\Oidc\TokenClient;
 use DmLab\SsoCore\Model\Oidc\TokenResponse;
-use Jose\Component\Core\JWKSet;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\Exception\LocalizedException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -49,9 +49,6 @@ class CallbackHandlerTest extends TestCase
     /** @var TokenClient&MockObject */
     private $tokenClient;
 
-    /** @var JwksClient&MockObject */
-    private $jwksClient;
-
     /** @var IdTokenValidator&MockObject */
     private $idTokenValidator;
 
@@ -64,6 +61,9 @@ class CallbackHandlerTest extends TestCase
     /** @var BackendUrlInterface&Stub */
     private $backendUrl;
 
+    /** @var AuthorizationResponseValidator&MockObject */
+    private $responseValidator;
+
     /** @var CallbackHandler */
     private CallbackHandler $handler;
 
@@ -73,22 +73,22 @@ class CallbackHandlerTest extends TestCase
         $this->resolver = $this->createStub(ActiveProviderResolver::class);
         $this->discoveryClient = $this->createMock(DiscoveryClient::class);
         $this->tokenClient = $this->createMock(TokenClient::class);
-        $this->jwksClient = $this->createMock(JwksClient::class);
         $this->idTokenValidator = $this->createMock(IdTokenValidator::class);
         $this->identityFactory = $this->createMock(IdentityFactory::class);
         $this->stateStorage = $this->createMock(AuthorizationStateStorageInterface::class);
         $this->backendUrl = $this->createStub(BackendUrlInterface::class);
+        $this->responseValidator = $this->createMock(AuthorizationResponseValidator::class);
 
         $this->handler = new CallbackHandler(
             $this->config,
             $this->resolver,
             $this->discoveryClient,
             $this->tokenClient,
-            $this->jwksClient,
             $this->idTokenValidator,
             $this->identityFactory,
             $this->stateStorage,
-            $this->backendUrl
+            $this->backendUrl,
+            $this->responseValidator
         );
     }
 
@@ -106,7 +106,8 @@ class CallbackHandlerTest extends TestCase
             'https://idp.example',
             'https://idp.example/authorize',
             'https://idp.example/token',
-            'https://idp.example/jwks'
+            'https://idp.example/jwks',
+            ['client_secret_basic', 'client_secret_post']
         );
     }
 
@@ -118,17 +119,17 @@ class CallbackHandlerTest extends TestCase
     {
         $this->discoveryClient->expects(self::never())->method('discover');
         $this->tokenClient->expects(self::never())->method('exchangeCode');
-        $this->jwksClient->expects(self::never())->method('getKeySet');
-        $this->jwksClient->expects(self::never())->method('getKeySetForToken');
-        $this->idTokenValidator->expects(self::never())->method('validate');
+        $this->idTokenValidator->expects(self::never())->method('validateForProvider');
         $this->identityFactory->expects(self::never())->method('create');
+        $this->responseValidator->expects(self::never())->method('validateIssuer');
     }
 
     public function testHandleReturnsNormalizedIdentity(): void
     {
         $preset = $this->preset();
-        $keySet = new JWKSet([]);
-        $claims = ['sub' => 'user-1', 'email' => 'user@example.com', 'nonce' => self::NONCE];
+        $metadata = $this->metadata();
+        $authState = new AuthorizationState(self::STATE, self::NONCE, self::VERIFIER, 'https://idp.example');
+        $claims = ['sub' => 'user-1', 'iss' => 'https://idp.example', 'nonce' => self::NONCE];
         $identity = new Identity('user-1', 'user@example.com', 'User One', ['admins']);
 
         $this->config->method('isEnabled')->willReturn(true);
@@ -140,12 +141,16 @@ class CallbackHandlerTest extends TestCase
         $this->stateStorage->expects(self::once())
             ->method('consume')
             ->with(self::STATE)
-            ->willReturn(new AuthorizationState(self::STATE, self::NONCE, self::VERIFIER));
+            ->willReturn($authState);
 
         $this->discoveryClient->expects(self::once())
             ->method('discover')
             ->with('https://idp.example/.well-known/openid-configuration', true)
-            ->willReturn($this->metadata());
+            ->willReturn($metadata);
+
+        $this->responseValidator->expects(self::once())
+            ->method('validateIssuer')
+            ->with('https://idp.example', $authState, $metadata);
 
         $this->tokenClient->expects(self::once())
             ->method('exchangeCode')
@@ -155,19 +160,14 @@ class CallbackHandlerTest extends TestCase
                 self::CALLBACK_URL,
                 'cid',
                 self::VERIFIER,
-                'secret'
+                'secret',
+                ['client_secret_basic', 'client_secret_post']
             )
             ->willReturn(new TokenResponse('the-id-token'));
 
-        $this->jwksClient->expects(self::never())->method('getKeySet');
-        $this->jwksClient->expects(self::once())
-            ->method('getKeySetForToken')
-            ->with('https://idp.example/jwks', 'the-id-token')
-            ->willReturn($keySet);
-
         $this->idTokenValidator->expects(self::once())
-            ->method('validate')
-            ->with('the-id-token', $keySet, 'https://idp.example', 'cid', self::NONCE)
+            ->method('validateForProvider')
+            ->with('the-id-token', $metadata, 'cid', self::NONCE)
             ->willReturn($claims);
 
         $this->identityFactory->expects(self::once())
@@ -175,7 +175,29 @@ class CallbackHandlerTest extends TestCase
             ->with($claims, $preset)
             ->willReturn($identity);
 
-        self::assertSame($identity, $this->handler->handle(self::CODE, self::STATE));
+        self::assertSame($identity, $this->handler->handle(self::CODE, self::STATE, 'https://idp.example'));
+    }
+
+    public function testIssuerMismatchStopsBeforeCodeExchange(): void
+    {
+        $this->config->method('isEnabled')->willReturn(true);
+        $this->config->method('getClientId')->willReturn('cid');
+        $this->resolver->method('getActive')->willReturn($this->preset());
+        $this->stateStorage->expects(self::once())->method('consume')
+            ->willReturn(new AuthorizationState(self::STATE, self::NONCE, self::VERIFIER, 'https://idp.example'));
+        $this->discoveryClient->expects(self::once())->method('discover')->willReturn($this->metadata());
+
+        $this->responseValidator->expects(self::once())
+            ->method('validateIssuer')
+            ->with('https://evil.example')
+            ->willThrowException(new AuthorizationResponseException('iss mismatch'));
+        $this->tokenClient->expects(self::never())->method('exchangeCode');
+        $this->idTokenValidator->expects(self::never())->method('validateForProvider');
+        $this->identityFactory->expects(self::never())->method('create');
+
+        $this->expectException(AuthorizationResponseException::class);
+
+        $this->handler->handle(self::CODE, self::STATE, 'https://evil.example');
     }
 
     public function testHonoursIssuerPolicyOptOut(): void
@@ -202,11 +224,13 @@ class CallbackHandlerTest extends TestCase
             ->method('discover')
             ->with('https://idp.example/.well-known/openid-configuration', false)
             ->willReturn($this->metadata());
+        $this->responseValidator->expects(self::once())->method('validateIssuer')->with(null);
         $this->tokenClient->expects(self::once())
             ->method('exchangeCode')
             ->willReturn(new TokenResponse('the-id-token'));
-        $this->jwksClient->expects(self::once())->method('getKeySetForToken')->willReturn(new JWKSet([]));
-        $this->idTokenValidator->expects(self::once())->method('validate')->willReturn(['sub' => 'user-1']);
+        $this->idTokenValidator->expects(self::once())
+            ->method('validateForProvider')
+            ->willReturn(['sub' => 'user-1', 'iss' => 'https://idp.example']);
         $this->identityFactory->expects(self::once())->method('create')->willReturn($identity);
 
         self::assertSame($identity, $this->handler->handle(self::CODE, self::STATE));

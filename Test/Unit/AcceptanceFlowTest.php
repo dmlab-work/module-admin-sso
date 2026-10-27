@@ -24,14 +24,13 @@ use DmLab\SsoCore\Api\ProviderPresetInterface;
 use DmLab\SsoCore\Model\Data\Identity;
 use DmLab\SsoCore\Model\Mapping\MappingEngine;
 use DmLab\SsoCore\Model\Oidc\AuthorizationRequestFactory;
+use DmLab\SsoCore\Model\Oidc\AuthorizationResponseValidator;
 use DmLab\SsoCore\Model\Oidc\DiscoveryClient;
 use DmLab\SsoCore\Model\Oidc\IdentityFactory;
 use DmLab\SsoCore\Model\Oidc\IdTokenValidator;
-use DmLab\SsoCore\Model\Oidc\JwksClient;
 use DmLab\SsoCore\Model\Oidc\ProviderMetadata;
 use DmLab\SsoCore\Model\Oidc\TokenClient;
 use DmLab\SsoCore\Model\Oidc\TokenResponse;
-use Jose\Component\Core\JWKSet;
 use Magento\Backend\App\Action\Context as ActionContext;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
@@ -371,12 +370,10 @@ class AcceptanceFlowTest extends TestCase
         $tokenClient = $this->createStub(TokenClient::class);
         $tokenClient->method('exchangeCode')->willReturn(new TokenResponse('the-id-token'));
 
-        $jwksClient = $this->createStub(JwksClient::class);
-        $jwksClient->method('getKeySetForToken')->willReturn(new JWKSet([]));
-
         $validator = $this->createStub(IdTokenValidator::class);
-        $validator->method('validate')->willReturn([
+        $validator->method('validateForProvider')->willReturn([
             'sub' => self::SUBJECT,
+            'iss' => 'https://idp.example',
             'email' => self::EMAIL,
             'name' => 'Jane Doe',
             'groups' => $groups,
@@ -390,11 +387,11 @@ class AcceptanceFlowTest extends TestCase
             $resolver,
             $discovery,
             $tokenClient,
-            $jwksClient,
             $validator,
             new IdentityFactory(),
             $stateStorage,
-            $backendUrl
+            $backendUrl,
+            new AuthorizationResponseValidator()
         );
     }
 

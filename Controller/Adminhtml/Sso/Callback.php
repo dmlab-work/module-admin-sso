@@ -22,7 +22,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Handles the admin OIDC redirect back from the IdP: surfaces IdP error responses,
- * hands the `code`/`state` to {@see CallbackHandler} for a verified identity, resolves
+ * hands the `code`/`state`/`iss` to {@see CallbackHandler} for a verified identity, resolves
  * its ACL role from the IdP groups, provisions the matching admin user (JIT), assigns
  * the role, and establishes the backend session. The role is resolved first so a
  * refused login creates or links no admin.
@@ -84,7 +84,8 @@ class Callback extends Auth implements HttpGetActionInterface
         }
 
         try {
-            $identity = $this->callbackHandler->handle($code, $state);
+            $iss = $request->getParam('iss');
+            $identity = $this->callbackHandler->handle($code, $state, is_string($iss) ? $iss : null);
             $roleId = $this->roleAssigner->resolve($identity);
             $user = $this->userProvisioner->provision($identity);
             $this->roleAssigner->assign($user, $roleId);

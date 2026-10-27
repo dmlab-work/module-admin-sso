@@ -127,7 +127,7 @@ class CallbackTest extends TestCase
 
         $this->handler->expects(self::once())
             ->method('handle')
-            ->with('the-code', 'the-state')
+            ->with('the-code', 'the-state', null)
             ->willReturn($identity);
         $this->roleAssigner->expects(self::once())
             ->method('resolve')
@@ -158,6 +158,21 @@ class CallbackTest extends TestCase
         self::assertSame($this->redirect, $this->controller->execute());
         // The role is resolved before provisioning so a refused login creates no admin.
         self::assertSame(['resolve', 'provision', 'assign'], $calls);
+    }
+
+    public function testForwardsIssParamToHandler(): void
+    {
+        $this->withParams(['code' => 'the-code', 'state' => 'the-state', 'iss' => 'https://idp.example']);
+        $this->expectLoginRedirect();
+
+        $this->handler->expects(self::once())
+            ->method('handle')
+            ->with('the-code', 'the-state', 'https://idp.example')
+            ->willThrowException(new LocalizedException(__('Admin SSO is disabled.')));
+        $this->messageManager->expects(self::once())->method('addErrorMessage')->with('Admin SSO is disabled.');
+        $this->logger->expects(self::never())->method('critical');
+
+        self::assertSame($this->redirect, $this->controller->execute());
     }
 
     public function testRefusesWithoutProvisioningWhenNoRoleResolves(): void

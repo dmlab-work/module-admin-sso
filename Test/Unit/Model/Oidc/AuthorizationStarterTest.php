@@ -112,7 +112,8 @@ class AuthorizationStarterTest extends TestCase
                 'cid',
                 self::CALLBACK_URL,
                 ['openid', 'email', 'groups'],
-                []
+                [],
+                'https://idp.example'
             )
             ->willReturn($request);
 
@@ -141,7 +142,14 @@ class AuthorizationStarterTest extends TestCase
         $request = new AuthorizationRequest(self::AUTH_URL, 'abc', 'nnn', 'vvv');
         $this->requestFactory->expects(self::once())
             ->method('create')
-            ->with('https://idp.example/authorize', 'cid', self::CALLBACK_URL, ['openid'], ['hd' => 'example.com'])
+            ->with(
+                'https://idp.example/authorize',
+                'cid',
+                self::CALLBACK_URL,
+                ['openid'],
+                ['hd' => 'example.com'],
+                'https://idp.example'
+            )
             ->willReturn($request);
         $this->stateStorage->expects(self::once())->method('save')->with($request);
 

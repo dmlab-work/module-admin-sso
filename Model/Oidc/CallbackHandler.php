@@ -13,24 +13,24 @@ use DmLab\SsoCore\Api\AuthorizationStateStorageInterface;
 use DmLab\SsoCore\Api\Data\IdentityInterface;
 use DmLab\SsoCore\Api\DiscoveryIssuerPolicyInterface;
 use DmLab\SsoCore\Api\ProviderPresetInterface;
+use DmLab\SsoCore\Model\Oidc\AuthorizationResponseValidator;
 use DmLab\SsoCore\Model\Oidc\DiscoveryClient;
 use DmLab\SsoCore\Model\Oidc\IdentityFactory;
 use DmLab\SsoCore\Model\Oidc\IdTokenValidator;
-use DmLab\SsoCore\Model\Oidc\JwksClient;
 use DmLab\SsoCore\Model\Oidc\TokenClient;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\Exception\LocalizedException;
 
 /**
- * Orchestrates the admin OIDC callback: validates the one-time `state`, exchanges
- * the authorization code for tokens (via sso-core), validates the returned ID
- * token against the IdP's JWKS + the stored nonce, and normalizes its claims into
- * a provider-agnostic {@see IdentityInterface}.
+ * Orchestrates the admin OIDC callback: validates the one-time `state` and the
+ * response issuer (RFC 9207 / mix-up defense), exchanges the authorization code for
+ * tokens (via sso-core), validates the returned ID token against the IdP's JWKS +
+ * the stored nonce, and normalizes its claims into a provider-agnostic
+ * {@see IdentityInterface}.
  *
  * Provider-neutral: the concrete IdP arrives only through the active preset, so
- * this stays free of any provider-specific code (open/closed). Establishing the
- * admin session and provisioning the user happen in later tasks; this only
- * produces the verified identity.
+ * this stays free of any provider-specific code (open/closed). It only produces the
+ * verified identity; provisioning and the admin session happen in the controller.
  */
 class CallbackHandler
 {
@@ -42,22 +42,22 @@ class CallbackHandler
      * @param ActiveProviderResolver $activeProviderResolver
      * @param DiscoveryClient $discoveryClient
      * @param TokenClient $tokenClient
-     * @param JwksClient $jwksClient
      * @param IdTokenValidator $idTokenValidator
      * @param IdentityFactory $identityFactory
      * @param AuthorizationStateStorageInterface $stateStorage
      * @param BackendUrlInterface $backendUrl
+     * @param AuthorizationResponseValidator $responseValidator
      */
     public function __construct(
         private readonly Config $config,
         private readonly ActiveProviderResolver $activeProviderResolver,
         private readonly DiscoveryClient $discoveryClient,
         private readonly TokenClient $tokenClient,
-        private readonly JwksClient $jwksClient,
         private readonly IdTokenValidator $idTokenValidator,
         private readonly IdentityFactory $identityFactory,
         private readonly AuthorizationStateStorageInterface $stateStorage,
-        private readonly BackendUrlInterface $backendUrl
+        private readonly BackendUrlInterface $backendUrl,
+        private readonly AuthorizationResponseValidator $responseValidator
     ) {
     }
 
@@ -67,13 +67,15 @@ class CallbackHandler
      * @param string $code authorization code returned by the IdP
      * @param string $state opaque state returned by the IdP; matched against the
      *        one-time value persisted at start
+     * @param string|null $iss RFC 9207 `iss` response param; null when absent
      * @throws LocalizedException when SSO is disabled, no provider is active, the
      *         client id is unset, or the state is unknown/expired (replay).
+     * @throws \DmLab\SsoCore\Exception\AuthorizationResponseException on an issuer mismatch
      * @throws \DmLab\SsoCore\Exception\DiscoveryException
      * @throws \DmLab\SsoCore\Exception\TokenException
      * @throws \DmLab\SsoCore\Exception\IdTokenValidationException
      */
-    public function handle(string $code, string $state): IdentityInterface
+    public function handle(string $code, string $state, ?string $iss = null): IdentityInterface
     {
         if (!$this->config->isEnabled()) {
             throw new LocalizedException(__('Admin SSO is disabled.'));
@@ -102,6 +104,7 @@ class CallbackHandler
             $preset->buildDiscoveryUrl($this->presetConfig()),
             $this->requiresIssuerMatch($preset)
         );
+        $this->responseValidator->validateIssuer($iss, $authState, $metadata);
 
         $tokenResponse = $this->tokenClient->exchangeCode(
             $metadata->getTokenEndpoint(),
@@ -109,13 +112,13 @@ class CallbackHandler
             $this->callbackUrl(),
             $clientId,
             $authState->getCodeVerifier(),
-            $this->config->getClientSecret()
+            $this->config->getClientSecret(),
+            $metadata->getTokenEndpointAuthMethodsSupported()
         );
 
-        $claims = $this->idTokenValidator->validate(
+        $claims = $this->idTokenValidator->validateForProvider(
             $tokenResponse->getIdToken(),
-            $this->jwksClient->getKeySetForToken($metadata->getJwksUri(), $tokenResponse->getIdToken()),
-            $metadata->getIssuer(),
+            $metadata,
             $clientId,
             $authState->getNonce()
         );

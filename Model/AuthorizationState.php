@@ -12,7 +12,7 @@ use DmLab\SsoCore\Api\Data\AuthorizationStateInterface;
 /**
  * Plain value object carrying the one-time authorization state reloaded from the
  * session on the callback. Unlike sso-core's {@see AuthorizationRequest} it holds
- * no redirect URL — only the `state`/`nonce`/PKCE verifier the callback needs.
+ * no redirect URL — only the `state`/`nonce`/PKCE verifier/issuer the callback needs.
  */
 class AuthorizationState implements AuthorizationStateInterface
 {
@@ -20,11 +20,13 @@ class AuthorizationState implements AuthorizationStateInterface
      * @param string $state
      * @param string $nonce
      * @param string $codeVerifier
+     * @param string $issuer
      */
     public function __construct(
         private readonly string $state,
         private readonly string $nonce,
-        private readonly string $codeVerifier
+        private readonly string $codeVerifier,
+        private readonly string $issuer = ''
     ) {
     }
 
@@ -50,5 +52,13 @@ class AuthorizationState implements AuthorizationStateInterface
     public function getCodeVerifier(): string
     {
         return $this->codeVerifier;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getIssuer(): string
+    {
+        return $this->issuer;
     }
 }

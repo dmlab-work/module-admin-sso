@@ -43,6 +43,7 @@ class AuthorizationStateStorage implements AuthorizationStateStorageInterface
         $states[$state->getState()] = [
             'nonce' => $state->getNonce(),
             'code_verifier' => $state->getCodeVerifier(),
+            'issuer' => $state->getIssuer(),
         ];
         $this->session->setData(self::SESSION_KEY, $states);
     }
@@ -64,14 +65,15 @@ class AuthorizationStateStorage implements AuthorizationStateStorageInterface
         return new AuthorizationState(
             $state,
             (string)($entry['nonce'] ?? ''),
-            (string)($entry['code_verifier'] ?? '')
+            (string)($entry['code_verifier'] ?? ''),
+            (string)($entry['issuer'] ?? '')
         );
     }
 
     /**
      * Load the pending-state map from the session.
      *
-     * @return array<string,array{nonce:string,code_verifier:string}>
+     * @return array<string,array{nonce:string,code_verifier:string,issuer?:string}>
      */
     private function load(): array
     {

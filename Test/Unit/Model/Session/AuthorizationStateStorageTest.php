@@ -43,9 +43,13 @@ class AuthorizationStateStorageTest extends TestCase
         $this->storage = new AuthorizationStateStorage($session);
     }
 
-    private function state(string $state, string $nonce, string $verifier): AuthorizationStateInterface
-    {
-        return new AuthorizationState($state, $nonce, $verifier);
+    private function state(
+        string $state,
+        string $nonce,
+        string $verifier,
+        string $issuer = 'https://idp.example'
+    ): AuthorizationStateInterface {
+        return new AuthorizationState($state, $nonce, $verifier, $issuer);
     }
 
     public function testSavedStateIsConsumedOnce(): void
@@ -58,9 +62,17 @@ class AuthorizationStateStorageTest extends TestCase
         self::assertSame('s1', $loaded->getState());
         self::assertSame('n1', $loaded->getNonce());
         self::assertSame('v1', $loaded->getCodeVerifier());
+        self::assertSame('https://idp.example', $loaded->getIssuer());
 
         // Replay protection: a second consume returns null.
         self::assertNull($this->storage->consume('s1'));
+    }
+
+    public function testEntryWithoutIssuerRestoresEmptyIssuer(): void
+    {
+        $this->store['dmlab_admin_sso_auth_states'] = ['s1' => ['nonce' => 'n1', 'code_verifier' => 'v1']];
+
+        self::assertSame('', $this->storage->consume('s1')?->getIssuer());
     }
 
     public function testConsumeUnknownStateReturnsNull(): void
