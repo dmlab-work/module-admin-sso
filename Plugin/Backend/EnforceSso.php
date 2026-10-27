@@ -8,11 +8,15 @@ declare(strict_types=1);
 namespace DmLab\AdminSso\Plugin\Backend;
 
 use DmLab\AdminSso\Model\Config;
+use DmLab\AdminSso\Model\UserProvisioner;
 use Magento\Framework\Exception\AuthenticationException;
+use Magento\User\Model\ResourceModel\User as UserResource;
 use Magento\User\Model\User;
 
 /**
- * Disables native username/password admin login while SSO is enforced.
+ * Disables native username/password admin login while SSO is enforced, and always
+ * for SSO-linked admins while SSO is enabled — a local password (e.g. set via
+ * "Forgot password") must not outlive the admin's deactivation at the IdP.
  *
  * Hooks {@see User::authenticate()}, which both the admin login form and the REST
  * admin-token endpoint go through; SSO logins never call it (they establish the
@@ -23,9 +27,11 @@ class EnforceSso
 {
     /**
      * @param Config $config
+     * @param UserResource $userResource
      */
     public function __construct(
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly UserResource $userResource
     ) {
     }
 
@@ -58,11 +64,24 @@ class EnforceSso
      */
     private function isNativeLoginBlocked(string $username): bool
     {
-        if (!$this->config->isEnabled() || !$this->config->isEnforceSso()) {
+        if (!$this->config->isEnabled() || $this->isBreakGlassAllowed($username)) {
             return false;
         }
 
-        return !$this->isBreakGlassAllowed($username);
+        return $this->config->isEnforceSso() || $this->isSsoLinked($username);
+    }
+
+    /**
+     * Whether the admin with this username is linked to an IdP identity.
+     *
+     * @param string $username
+     * @return bool
+     */
+    private function isSsoLinked(string $username): bool
+    {
+        $row = $this->userResource->loadByUsername($username);
+
+        return is_array($row) && (string)($row[UserProvisioner::SUBJECT_FIELD] ?? '') !== '';
     }
 
     /**

@@ -53,7 +53,7 @@
                        showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Enforce SSO</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Blocks native password login on every admin path (login form, REST admin token).</comment>
+                    <comment>Blocks native password login on every admin path (login form, REST admin token). SSO-linked admins are always blocked while SSO is enabled.</comment>
                     <depends>
                         <field id="enabled">1</field>
                     </depends>
@@ -62,9 +62,9 @@
                        showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Allow Break-Glass Login</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Lets the usernames listed below keep native password login under Enforce SSO.</comment>
+                    <comment>Lets the usernames listed below keep native password login when SSO blocks it (Enforce SSO, or SSO-linked admins).</comment>
                     <depends>
-                        <field id="enforce_sso">1</field>
+                        <field id="enabled">1</field>
                     </depends>
                 </field>
                 <field id="break_glass_usernames" translate="label comment" type="textarea" sortOrder="65"

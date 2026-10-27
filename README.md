@@ -45,7 +45,7 @@ Admin → Stores → Configuration → **DMLab → Admin SSO → General** (conf
 | Client ID | `client_id` | OIDC client id from the IdP. |
 | Client Secret | `client_secret` | Stored encrypted; sensitive, so `app:config:dump` skips it (set per environment with `config:sensitive:set`). |
 | Enforce SSO | `enforce_sso` | Blocks native password login. See below. |
-| Allow Break-Glass Login | `break_glass` | Lets allowlisted users bypass Enforce SSO. Off by default. |
+| Allow Break-Glass Login | `break_glass` | Lets allowlisted users keep password login where SSO blocks it. Off by default. |
 | Break-Glass Usernames | `break_glass_usernames` | Admin usernames, one per line or comma-separated; case-insensitive. |
 | Group to Role Map | `group_role_map` | IdP group → ACL role rules. See below. |
 | Default Role | `default_role` | Fallback role when no group matches; empty = refuse login. |
@@ -69,6 +69,8 @@ Roles are (re)assigned on every login, so IdP group changes take effect at next 
 ## Enforce SSO + break-glass
 
 With **Enforce SSO** on, every native password login is rejected — the admin form and `POST /rest/V1/integration/admin/token` alike (enforced on `Magento\User\Model\User::authenticate()`). All sign-in goes through the IdP.
+
+Even with Enforce SSO off, an admin linked to an IdP identity (created or adopted by SSO) cannot use a password while SSO is enabled, so a local password (e.g. from "Forgot password") does not outlive deactivation at the IdP. Local-only admins keep password login.
 
 For recovery if the IdP is misconfigured, turn on **Allow Break-Glass Login** and list the local admins in **Break-Glass Usernames**. Only those usernames keep password login; an empty list means no bypass. There is no URL parameter.
 
