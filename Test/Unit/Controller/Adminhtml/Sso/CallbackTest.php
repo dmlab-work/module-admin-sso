@@ -129,7 +129,7 @@ class CallbackTest extends TestCase
         $this->handler->expects(self::once())
             ->method('handle')
             ->with('the-code', 'the-state', null)
-            ->willReturn(new CallbackResult($identity, ['amr' => ['mfa']]));
+            ->willReturn(new CallbackResult($identity, ['amr' => ['mfa']], 'the-id-token', 'okta'));
         $this->roleAssigner->expects(self::once())
             ->method('resolve')
             ->with($identity)
@@ -150,8 +150,9 @@ class CallbackTest extends TestCase
             ->willReturnCallback(function () use (&$calls): void {
                 $calls[] = 'assign';
             });
-        // The ID-token claims reach the session creator for the 2FA decision.
-        $this->sessionCreator->expects(self::once())->method('create')->with($user, ['amr' => ['mfa']]);
+        // The claims (2FA decision) and the raw ID token (IdP logout) reach the session creator.
+        $this->sessionCreator->expects(self::once())->method('create')
+            ->with($user, ['amr' => ['mfa']], 'the-id-token', 'okta');
 
         $this->redirect->expects(self::once())->method('setPath')->with('adminhtml/dashboard');
         $this->messageManager->expects(self::never())->method('addErrorMessage');

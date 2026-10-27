@@ -51,6 +51,9 @@ class Config
     /** `acr` values accepted as MFA evidence, newline/comma-separated. */
     public const XML_PATH_TRUSTED_ACR_VALUES = 'dmlab_admin_sso/general/trusted_acr_values';
 
+    /** Whether admin logout also ends the IdP session (OIDC RP-Initiated Logout). */
+    public const XML_PATH_IDP_LOGOUT = 'dmlab_admin_sso/general/idp_logout';
+
     /**
      * @param ScopeConfigInterface $scopeConfig
      * @param EncryptorInterface $encryptor
@@ -202,6 +205,14 @@ class Config
         }
 
         return array_values($values);
+    }
+
+    /**
+     * Whether admin logout redirects to the IdP's end-session endpoint.
+     */
+    public function isIdpLogoutEnabled(): bool
+    {
+        return $this->scopeConfig->isSetFlag(self::XML_PATH_IDP_LOGOUT);
     }
 
     /**

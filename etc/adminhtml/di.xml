@@ -12,4 +12,8 @@
     <type name="Magento\Backend\App\Action\Plugin\Authentication">
         <plugin name="dmlab_admin_sso_open_actions" type="DmLab\AdminSso\Plugin\Backend\OpenSsoActions"/>
     </type>
+    <!-- Optional OIDC RP-Initiated Logout after the core admin logout. -->
+    <type name="Magento\Backend\Controller\Adminhtml\Auth\Logout">
+        <plugin name="dmlab_admin_sso_idp_logout" type="DmLab\AdminSso\Plugin\Backend\IdpLogout"/>
+    </type>
 </config>

@@ -17,6 +17,7 @@ use DmLab\AdminSso\Model\Oidc\CallbackHandler;
 use DmLab\AdminSso\Model\PresetRegistry;
 use DmLab\AdminSso\Model\RoleAssigner;
 use DmLab\AdminSso\Model\Security\AdminSessionTracker;
+use DmLab\AdminSso\Model\Session\IdpSessionStorage;
 use DmLab\AdminSso\Model\TwoFactorAuth\IdpMfaPolicy;
 use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter;
 use DmLab\AdminSso\Model\UserProvisioner;
@@ -158,8 +159,17 @@ class AcceptanceFlowTest extends TestCase
         $sessionTracker = $this->createMock(AdminSessionTracker::class);
         $sessionTracker->expects(self::once())->method('processLogin');
 
-        (new AdminSessionCreator($authSession, $eventManager, $userResource, $granter, $sessionTracker))
-            ->create($provisioned, $callbackResult->getClaims());
+        // The raw ID token is kept for IdP logout (`id_token_hint`).
+        $idpSession = $this->createMock(IdpSessionStorage::class);
+        $idpSession->expects(self::once())->method('save')->with('the-id-token', 'stub');
+
+        (new AdminSessionCreator($authSession, $eventManager, $userResource, $granter, $sessionTracker, $idpSession))
+            ->create(
+                $provisioned,
+                $callbackResult->getClaims(),
+                $callbackResult->getIdToken(),
+                $callbackResult->getProviderCode()
+            );
 
         // The new user carries the create payload, the IdP subject link, and role 5.
         $createPayload = $this->createPayload($setDataCalls);

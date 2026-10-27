@@ -58,4 +58,16 @@ class DiConfigTest extends TestCase
         self::assertSame(1, $nodes->length);
         self::assertSame('1', trim($nodes->item(0)->textContent));
     }
+
+    public function testIdpLogoutIsOffByDefaultAndPluginsAdminLogout(): void
+    {
+        $nodes = $this->xpath('etc/config.xml')->query('/config/default/dmlab_admin_sso/general/idp_logout');
+        self::assertSame(1, $nodes->length);
+        self::assertSame('0', trim($nodes->item(0)->textContent));
+
+        $query = '/config/type[@name="Magento\Backend\Controller\Adminhtml\Auth\Logout"]'
+            . '/plugin[@name="dmlab_admin_sso_idp_logout"][@type="DmLab\AdminSso\Plugin\Backend\IdpLogout"]';
+        self::assertSame(1, $this->xpath('etc/adminhtml/di.xml')->query($query)->length);
+        self::assertTrue(method_exists(\Magento\Backend\Controller\Adminhtml\Auth\Logout::class, 'execute'));
+    }
 }

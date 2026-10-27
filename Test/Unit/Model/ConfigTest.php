@@ -133,6 +133,12 @@ class ConfigTest extends TestCase
         self::assertFalse($this->config([])->isTrustIdpMfa());
     }
 
+    public function testIdpLogoutReadsFlag(): void
+    {
+        self::assertTrue($this->config([Config::XML_PATH_IDP_LOGOUT => '1'])->isIdpLogoutEnabled());
+        self::assertFalse($this->config([])->isIdpLogoutEnabled());
+    }
+
     public function testGetTrustedAcrValuesSplitsTrimsAndDeduplicates(): void
     {
         $config = $this->config([Config::XML_PATH_TRUSTED_ACR_VALUES => " urn:mfa \r\nphr, urn:mfa\n\n"]);

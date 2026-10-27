@@ -51,6 +51,7 @@ Admin → Stores → Configuration → **DMLab → Admin SSO → General** (conf
 | Default Role | `default_role` | Fallback role when no group matches; empty = refuse login. |
 | Trust IdP MFA | `trust_idp_mfa` | On by default; skips Magento 2FA only with MFA evidence. See below. |
 | Trusted ACR Values | `trusted_acr_values` | Optional `acr` values that count as MFA evidence. |
+| Sign Out of IdP on Logout | `idp_logout` | Off by default. See below. |
 
 A "Sign in with SSO" button appears on the admin login page when the module is enabled and a provider is selected, using the active preset's branding.
 
@@ -88,6 +89,12 @@ With `Magento_TwoFactorAuth` enabled, an SSO login skips Magento 2FA only when *
 - or `acr` equals one of **Trusted ACR Values**.
 
 Otherwise (no `amr`/`acr`, e.g. Google, or password-only) Magento 2FA still applies. Trust IdP MFA = No always keeps Magento 2FA.
+
+## IdP logout
+
+With **Sign Out of IdP on Logout** on, logging out of an SSO-established admin session also ends the IdP session (OIDC RP-Initiated Logout 1.0): after the local logout the browser goes to the IdP's `end_session_endpoint` with `id_token_hint` (the login's ID token, kept in the admin session), `client_id` and `post_logout_redirect_uri`. This signs the user out of every app using that IdP session.
+
+Register the admin login URL as a post-logout redirect URI at the IdP: `https://<admin-host>/<admin-path>/admin/auth/login/`. If the IdP advertises no `end_session_endpoint`, discovery fails, the active provider changed since login, or the session was a password login, logout stays local.
 
 ## How it works
 

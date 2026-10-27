@@ -9,11 +9,13 @@ namespace DmLab\AdminSso\Test\Unit\Model;
 
 use DmLab\AdminSso\Model\AdminSessionCreator;
 use DmLab\AdminSso\Model\Security\AdminSessionTracker;
+use DmLab\AdminSso\Model\Session\IdpSessionStorage;
 use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter as TwoFactorSessionGranter;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Framework\Event\ManagerInterface as EventManager;
 use Magento\User\Model\ResourceModel\User as UserResource;
 use Magento\User\Model\User;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -34,6 +36,9 @@ class AdminSessionCreatorTest extends TestCase
     /** @var AdminSessionTracker&MockObject */
     private $adminSessionTracker;
 
+    /** @var IdpSessionStorage&MockObject */
+    private $idpSessionStorage;
+
     /** @var AdminSessionCreator */
     private AdminSessionCreator $creator;
 
@@ -46,13 +51,15 @@ class AdminSessionCreatorTest extends TestCase
         $this->userResource = $this->createMock(UserResource::class);
         $this->twoFactorSessionGranter = $this->createMock(TwoFactorSessionGranter::class);
         $this->adminSessionTracker = $this->createMock(AdminSessionTracker::class);
+        $this->idpSessionStorage = $this->createMock(IdpSessionStorage::class);
 
         $this->creator = new AdminSessionCreator(
             $this->authSession,
             $this->eventManager,
             $this->userResource,
             $this->twoFactorSessionGranter,
-            $this->adminSessionTracker
+            $this->adminSessionTracker,
+            $this->idpSessionStorage
         );
     }
 
@@ -72,7 +79,30 @@ class AdminSessionCreatorTest extends TestCase
         $this->twoFactorSessionGranter->expects(self::once())->method('grant');
         // Magento_Security session tracking runs as on a native login (Auth::login plugin).
         $this->adminSessionTracker->expects(self::once())->method('processLogin');
+        $this->idpSessionStorage->expects(self::never())->method('save');
 
         $this->creator->create($user);
+    }
+
+    // Only the save ordering is under test here; the rest of the login is covered above.
+    #[AllowMockObjectsWithoutExpectations]
+    public function testCreateKeepsIdTokenForIdpLogout(): void
+    {
+        $order = [];
+        $this->authSession->method('processLogin')->willReturnCallback(function () use (&$order) {
+            $order[] = 'processLogin';
+            return $this->authSession;
+        });
+        $this->idpSessionStorage->expects(self::once())
+            ->method('save')
+            ->with('raw-id-token', 'okta')
+            ->willReturnCallback(function () use (&$order): void {
+                $order[] = 'save';
+            });
+
+        $this->creator->create($this->createStub(User::class), [], 'raw-id-token', 'okta');
+
+        // Saved after processLogin so it lands in the authenticated session.
+        self::assertSame(['processLogin', 'save'], $order);
     }
 }

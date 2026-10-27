@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace DmLab\AdminSso\Model;
 
 use DmLab\AdminSso\Model\Security\AdminSessionTracker;
+use DmLab\AdminSso\Model\Session\IdpSessionStorage;
 use DmLab\AdminSso\Model\TwoFactorAuth\SessionGranter as TwoFactorSessionGranter;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Framework\Event\ManagerInterface as EventManager;
@@ -32,13 +33,15 @@ class AdminSessionCreator
      * @param UserResource $userResource
      * @param TwoFactorSessionGranter $twoFactorSessionGranter
      * @param AdminSessionTracker $adminSessionTracker
+     * @param IdpSessionStorage $idpSessionStorage
      */
     public function __construct(
         private readonly AuthSession $authSession,
         private readonly EventManager $eventManager,
         private readonly UserResource $userResource,
         private readonly TwoFactorSessionGranter $twoFactorSessionGranter,
-        private readonly AdminSessionTracker $adminSessionTracker
+        private readonly AdminSessionTracker $adminSessionTracker,
+        private readonly IdpSessionStorage $idpSessionStorage
     ) {
     }
 
@@ -47,11 +50,16 @@ class AdminSessionCreator
      *
      * @param User $user persisted admin user to authenticate
      * @param array<string,mixed> $claims validated ID-token claims; decide whether core 2FA is satisfied
+     * @param string $idToken raw ID token, kept for IdP logout; empty keeps none
+     * @param string $providerCode provider preset that issued the ID token
      */
-    public function create(User $user, array $claims = []): void
+    public function create(User $user, array $claims = [], string $idToken = '', string $providerCode = ''): void
     {
         $this->authSession->setUser($user);
         $this->authSession->processLogin();
+        if ($idToken !== '') {
+            $this->idpSessionStorage->save($idToken, $providerCode);
+        }
 
         $this->twoFactorSessionGranter->grant($claims);
 

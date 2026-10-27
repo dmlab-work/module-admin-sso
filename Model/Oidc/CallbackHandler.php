@@ -123,7 +123,12 @@ class CallbackHandler
             $authState->getNonce()
         );
 
-        return new CallbackResult($this->identityFactory->create($claims, $preset), $claims);
+        return new CallbackResult(
+            $this->identityFactory->create($claims, $preset),
+            $claims,
+            $tokenResponse->getIdToken(),
+            $preset->getCode()
+        );
     }
 
     /**

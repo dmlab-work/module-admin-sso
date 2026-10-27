@@ -127,6 +127,7 @@ class CallbackHandlerTest extends TestCase
     public function testHandleReturnsNormalizedIdentity(): void
     {
         $preset = $this->preset();
+        $preset->method('getCode')->willReturn('okta');
         $metadata = $this->metadata();
         $authState = new AuthorizationState(self::STATE, self::NONCE, self::VERIFIER, 'https://idp.example');
         $claims = ['sub' => 'user-1', 'iss' => 'https://idp.example', 'nonce' => self::NONCE];
@@ -178,6 +179,8 @@ class CallbackHandlerTest extends TestCase
         $result = $this->handler->handle(self::CODE, self::STATE, 'https://idp.example');
         self::assertSame($identity, $result->getIdentity());
         self::assertSame($claims, $result->getClaims());
+        self::assertSame('the-id-token', $result->getIdToken());
+        self::assertSame('okta', $result->getProviderCode());
     }
 
     public function testIssuerMismatchStopsBeforeCodeExchange(): void

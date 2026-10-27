@@ -18,10 +18,14 @@ class CallbackResult
     /**
      * @param IdentityInterface $identity
      * @param array<string,mixed> $claims validated ID-token claims
+     * @param string $idToken raw ID token, kept as `id_token_hint` for IdP logout
+     * @param string $providerCode code of the preset that issued it
      */
     public function __construct(
         private readonly IdentityInterface $identity,
-        private readonly array $claims
+        private readonly array $claims,
+        private readonly string $idToken = '',
+        private readonly string $providerCode = ''
     ) {
     }
 
@@ -41,5 +45,21 @@ class CallbackResult
     public function getClaims(): array
     {
         return $this->claims;
+    }
+
+    /**
+     * Raw validated ID token; empty when not provided.
+     */
+    public function getIdToken(): string
+    {
+        return $this->idToken;
+    }
+
+    /**
+     * Code of the provider preset that completed the login; empty when not provided.
+     */
+    public function getProviderCode(): string
+    {
+        return $this->providerCode;
     }
 }

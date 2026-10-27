@@ -16,6 +16,7 @@
                 <break_glass_usernames/>
                 <trust_idp_mfa>1</trust_idp_mfa>
                 <trusted_acr_values/>
+                <idp_logout>0</idp_logout>
             </general>
         </dmlab_admin_sso>
     </default>

@@ -116,6 +116,17 @@
                         <field id="trust_idp_mfa">1</field>
                     </depends>
                 </field>
+                <field id="idp_logout" translate="label comment" type="select" sortOrder="100"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Sign Out of IdP on Logout</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>
+                        <![CDATA[Admin logout also ends the IdP session (all apps signed in through it) when the IdP advertises <code>end_session_endpoint</code>. Register the admin login URL as a post-logout redirect URI at the IdP.]]>
+                    </comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
             </group>
         </section>
     </system>
