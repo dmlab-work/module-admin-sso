@@ -57,7 +57,21 @@ class RoleAssignerTest extends TestCase
      */
     private function existingRoles(string ...$existingIds): void
     {
+        $this->rolesOfType('G', ...$existingIds);
+    }
+
+    /**
+     * Like {@see existingRoles()} with an explicit `role_type` for the loaded roles.
+     *
+     * @param string $roleType
+     * @param string ...$existingIds
+     */
+    private function rolesOfType(string $roleType, string ...$existingIds): void
+    {
         $role = $this->createStub(Role::class);
+        $role->method('getData')->willReturnCallback(
+            static fn ($key) => $key === 'role_type' ? $roleType : null
+        );
         $loaded = null;
         $role->method('load')->willReturnCallback(
             static function ($id) use ($role, &$loaded): Role {
@@ -109,15 +123,31 @@ class RoleAssignerTest extends TestCase
         self::assertSame('5', $this->assigner->resolve(new Identity('sub', 'u@example.com', 'U', ['admins'])));
     }
 
-    public function testFirstResolvedRoleWinsWithMultipleGroups(): void
+    public function testFirstConfiguredRuleWinsRegardlessOfIdpGroupOrder(): void
     {
-        // Magento admin users hold a single role; the first resolved rule wins.
+        // Magento admin users hold a single role; the first matching rule (config order) wins.
         $this->withRules(['a' => '10', 'b' => '20']);
         $this->existingRoles('10', '20');
         // Resolution is read-only.
         $this->userResource->expects(self::never())->method('save');
 
         self::assertSame('10', $this->assigner->resolve(new Identity('sub', 'u@example.com', 'U', ['a', 'b'])));
+        self::assertSame('10', $this->assigner->resolve(new Identity('sub', 'u@example.com', 'U', ['b', 'a'])));
+    }
+
+    public function testRefusesPerUserRoleRow(): void
+    {
+        // role_type U rows are per-user links, not assignable admin roles.
+        $this->withRules(['admins' => '7']);
+        $this->rolesOfType('U', '7');
+        $this->userResource->expects(self::never())->method('save');
+
+        $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage(
+            'No admin role is mapped for your identity provider groups. Contact your administrator.'
+        );
+
+        $this->assigner->resolve(new Identity('sub', 'u@example.com', 'U', ['admins']));
     }
 
     public function testFallsBackToDefaultRoleWhenNoGroupMatches(): void

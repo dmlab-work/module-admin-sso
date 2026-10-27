@@ -114,11 +114,11 @@ class ConfigTest extends TestCase
         self::assertSame(['Admins' => '1', 'editors' => '2'], $config->getGroupRoleMap());
     }
 
-    public function testGetGroupRoleMapLastDuplicateWins(): void
+    public function testGetGroupRoleMapFirstDuplicateWinsAndKeepsRuleOrder(): void
     {
-        $config = $this->config([Config::XML_PATH_GROUP_ROLE_MAP => "team=1\nteam=5"]);
+        $config = $this->config([Config::XML_PATH_GROUP_ROLE_MAP => "team=1\nops=3\nteam=5"]);
 
-        self::assertSame(['team' => '5'], $config->getGroupRoleMap());
+        self::assertSame(['team' => '1', 'ops' => '3'], $config->getGroupRoleMap());
     }
 
     public function testGetGroupRoleMapEmptyWhenUnsetOrBlank(): void

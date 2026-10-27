@@ -31,8 +31,9 @@ use Magento\User\Model\UserFactory;
  * IdP-specific claim handling lives here. Role assignment is a later task; this
  * only ensures the `admin_user` row exists and carries the subject link.
  *
- * A matched (existing) admin must be active: SSO must not bypass the deactivation
- * that native login enforces ({@see \Magento\User\Model\User::verifyIdentity}).
+ * A matched (existing) admin must be active and not locked: SSO must not bypass the
+ * deactivation and lockout that native login enforces ({@see \Magento\User\Model\User::verifyIdentity},
+ * {@see \Magento\User\Observer\Backend\AuthObserver}).
  */
 class UserProvisioner
 {
@@ -144,18 +145,25 @@ class UserProvisioner
     }
 
     /**
-     * Refuse a disabled admin account. Native login rejects inactive users in
-     * {@see \Magento\User\Model\User::verifyIdentity}; the SSO path must too, or
-     * deactivating an admin would not lock them out.
+     * Refuse a disabled or locked admin account. Native login rejects inactive users in
+     * {@see \Magento\User\Model\User::verifyIdentity} and locked ones (`lock_expires` in the
+     * future, set by failed logins or an admin "Lock") in the backend AuthObserver; SSO must too.
      *
      * @param User $user matched existing admin
-     * @throws LocalizedException when the account is inactive
+     * @throws LocalizedException when the account is inactive or locked
      */
     private function assertActive(User $user): void
     {
         if ((int)$user->getData('is_active') !== 1) {
             throw new LocalizedException(
                 __('This admin account is disabled. Contact your administrator.')
+            );
+        }
+
+        $lockExpires = (string)$user->getData('lock_expires');
+        if ($lockExpires !== '' && new \DateTime($lockExpires) > new \DateTime()) {
+            throw new LocalizedException(
+                __('This admin account is temporarily locked. Please try again later.')
             );
         }
     }

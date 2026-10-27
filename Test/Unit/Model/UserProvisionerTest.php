@@ -372,6 +372,57 @@ class UserProvisionerTest extends TestCase
         $this->provisioner->provision(new Identity('sub-1', 'user@example.com', 'User One', []));
     }
 
+    /** A locked admin (failed logins / admin "Lock") is refused like native login refuses it. */
+    public function testRejectsLockedUserMatchedBySubject(): void
+    {
+        $locked = $this->createStub(User::class);
+        $locked->method('getId')->willReturn(5);
+        $locked->method('getData')->willReturnCallback(
+            static fn ($field) => match ($field) {
+                'is_active' => 1,
+                'lock_expires' => '2999-01-01 00:00:00',
+                UserProvisioner::ISSUER_FIELD => self::ISSUER,
+                default => null,
+            }
+        );
+
+        $this->collectionFactory->expects(self::once())
+            ->method('create')
+            ->willReturn($this->collectionReturning($locked));
+        $this->userResource->expects(self::never())->method('save');
+        $this->userFactory->expects(self::never())->method('create');
+
+        $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('This admin account is temporarily locked. Please try again later.');
+
+        $this->provisioner->provision(new Identity('sub-1', 'user@example.com', 'U', [], false, self::ISSUER));
+    }
+
+    public function testExpiredLockDoesNotBlock(): void
+    {
+        $user = $this->createStub(User::class);
+        $user->method('getId')->willReturn(5);
+        $user->method('getData')->willReturnCallback(
+            static fn ($field) => match ($field) {
+                'is_active' => 1,
+                'lock_expires' => '2000-01-01 00:00:00',
+                UserProvisioner::ISSUER_FIELD => self::ISSUER,
+                default => null,
+            }
+        );
+
+        $this->collectionFactory->expects(self::once())
+            ->method('create')
+            ->willReturn($this->collectionReturning($user));
+        $this->userResource->expects(self::never())->method('save');
+        $this->userFactory->expects(self::never())->method('create');
+
+        self::assertSame(
+            $user,
+            $this->provisioner->provision(new Identity('sub-1', 'user@example.com', 'U', [], false, self::ISSUER))
+        );
+    }
+
     /** A matched-by-subject admin who was deactivated must be refused. */
     public function testRejectsDisabledUserMatchedBySubject(): void
     {

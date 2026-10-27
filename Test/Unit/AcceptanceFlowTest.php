@@ -455,6 +455,7 @@ class AcceptanceFlowTest extends TestCase
         $role = $this->createStub(Role::class);
         $role->method('load')->willReturnSelf();
         $role->method('getId')->willReturn($roleId);
+        $role->method('getData')->willReturnCallback(static fn ($key) => $key === 'role_type' ? 'G' : null);
 
         $factory = $this->createStub(RoleFactory::class);
         $factory->method('create')->willReturn($role);

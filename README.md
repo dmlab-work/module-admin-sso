@@ -56,7 +56,7 @@ A "Sign in with SSO" button appears on the admin login page when the module is e
 
 ### Group → role mapping
 
-`group_role_map` takes one rule per line as `idp_group=role_id`, where `role_id` is a Magento `authorization_role` id. Blank lines and `#` comments are ignored; on duplicate groups the later line wins.
+`group_role_map` takes one rule per line as `idp_group=role_id`, where `role_id` is a Magento admin role id (`authorization_role` with `role_type` G). Blank lines and `#` comments are ignored. A Magento admin holds one role, so the first line matching any of the user's groups wins (rule order, not IdP group order); a repeated group keeps its first line.
 
 ```
 # IdP group          Magento role id
@@ -91,10 +91,10 @@ Otherwise (no `amr`/`acr`, e.g. Google, or password-only) Magento 2FA still appl
 
 ## How it works
 
-1. User clicks "Sign in with SSO" → `adminsso/sso/start` builds the OIDC auth URL (state + nonce + PKCE) via sso-core and the active preset, then redirects to the IdP.
+1. User clicks "Sign in with SSO" → `adminsso/sso/start` builds the OIDC auth URL (state + nonce + PKCE; pending state valid 10 minutes, at most 10 per session) via sso-core and the active preset, then redirects to the IdP.
 2. The IdP redirects back to `adminsso/sso/callback`, which validates `state` and the response issuer (RFC 9207 `iss`), exchanges the code, and normalizes claims into an `Identity` via sso-core.
 3. The ACL role is resolved from IdP groups; if none resolves, the login is refused here.
-4. JIT: the admin user is matched by IdP issuer + `sub` (stored on `admin_user.dmlab_sso_issuer` / `dmlab_sso_subject_id`, unique together, added at `setup:upgrade`), falling back to email — adopted only when the IdP marks it verified (`email_verified`), otherwise refused — and created if absent (with a suffixed username on any local collision). The role is assigned and the admin backend session is established like a native login: `backend_auth_user_login_success` fires and `Magento_Security` records the session (Admin Account Sharing applies).
+4. JIT: the admin user is matched by IdP issuer + `sub` (stored on `admin_user.dmlab_sso_issuer` / `dmlab_sso_subject_id`, unique together, added at `setup:upgrade`), falling back to email — adopted only when the IdP marks it verified (`email_verified`), otherwise refused — and created if absent (with a suffixed username on any local collision). A matched admin must be active and not locked (`lock_expires`). The role is assigned and the admin backend session is established like a native login: `backend_auth_user_login_success` fires and `Magento_Security` records the session (Admin Account Sharing applies).
 5. If the IdP proved MFA, the session satisfies Magento core 2FA (`Magento_TwoFactorAuth`); otherwise the user completes Magento 2FA.
 
 ### Identity links and switching IdP

@@ -9,6 +9,7 @@ namespace DmLab\AdminSso\Model;
 
 use DmLab\SsoCore\Api\Data\IdentityInterface;
 use DmLab\SsoCore\Model\Mapping\MappingEngine;
+use Magento\Authorization\Model\Acl\Role\Group as GroupRole;
 use Magento\Authorization\Model\RoleFactory;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\User\Model\ResourceModel\User as UserResource;
@@ -22,7 +23,8 @@ use Magento\User\Model\User;
  * {@see MappingEngine} resolves the groups against them, falling back to the
  * configured default role when nothing matches. Incomplete groups (an IdP overage,
  * sent as a distributed claim) refuse the login. A Magento admin user holds a
- * single role, so the first resolved role wins. When neither a rule nor a default
+ * single role, so the first matching rule in configured order wins (not the IdP's
+ * group order). Only admin roles (`role_type` G) are assigned. When neither a rule nor a default
  * applies the SSO login is refused — the stored role is never demoted
  * (deprovisioning is SCIM's job).
  *
@@ -76,8 +78,8 @@ class RoleAssigner
         );
         $roleId = $roles[0] ?? null;
 
-        // A typo'd / deleted role id must not be assigned: the user resource would
-        // clear the current authorization_role link and grant nothing.
+        // A typo'd / deleted / per-user role id must not be assigned: the user resource
+        // would clear the current authorization_role link and grant nothing.
         if ($roleId === null || !$this->roleExists($roleId)) {
             throw new LocalizedException(
                 __('No admin role is mapped for your identity provider groups. Contact your administrator.')
@@ -104,12 +106,14 @@ class RoleAssigner
     }
 
     /**
-     * Whether an admin ACL role with the given id exists.
+     * Whether an admin ACL role (a group role, not a per-user `U` row) with the given id exists.
      *
      * @param string $roleId
      */
     private function roleExists(string $roleId): bool
     {
-        return (bool)$this->roleFactory->create()->load($roleId)->getId();
+        $role = $this->roleFactory->create()->load($roleId);
+
+        return $role->getId() && $role->getData('role_type') === GroupRole::ROLE_TYPE;
     }
 }

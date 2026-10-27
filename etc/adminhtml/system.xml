@@ -79,7 +79,7 @@
                        showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Group to Role Map</label>
                     <comment>
-                        <![CDATA[One <code>idp_group=role_id</code> per line; <code>#</code> comments ignored.]]>
+                        <![CDATA[One <code>idp_group=role_id</code> per line; the first matching line wins. <code>#</code> comments ignored.]]>
                     </comment>
                     <depends>
                         <field id="enabled">1</field>

@@ -134,11 +134,10 @@ class Config
     /**
      * Parsed IdP-group → ACL-role-id map.
      *
-     * Reads the `group=role_id` lines; blank lines and `#` comments are ignored,
-     * later entries win on duplicate groups. The actual mapping is applied by the
-     * role assigner (a later task); this only exposes the configured rules.
+     * Reads the `group=role_id` lines in configured order (= priority); blank lines and
+     * `#` comments are ignored, and a repeated group keeps its first line.
      *
-     * @return array<string,string> group name → ACL role id
+     * @return array<string,string> group name → ACL role id, in rule order
      */
     public function getGroupRoleMap(): array
     {
@@ -156,7 +155,7 @@ class Config
             [$group, $roleId] = explode('=', $line, 2);
             $group = trim($group);
             $roleId = trim($roleId);
-            if ($group !== '' && $roleId !== '') {
+            if ($group !== '' && $roleId !== '' && !array_key_exists($group, $map)) {
                 $map[$group] = $roleId;
             }
         }

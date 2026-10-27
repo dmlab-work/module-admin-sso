@@ -11,6 +11,7 @@ use DmLab\AdminSso\Model\AuthorizationState;
 use DmLab\AdminSso\Model\Session\AuthorizationStateStorage;
 use DmLab\SsoCore\Api\Data\AuthorizationStateInterface;
 use Magento\Backend\Model\Session;
+use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Framework\TestFramework\Unit\Helper\MockCreationTrait;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
@@ -24,6 +25,9 @@ class AuthorizationStateStorageTest extends TestCase
 
     /** @var array<string,mixed> */
     private array $store = [];
+
+    /** @var int fake clock (UTC timestamp) */
+    private int $now = 1_700_000_000;
 
     /** @var AuthorizationStateStorage */
     private AuthorizationStateStorage $storage;
@@ -40,7 +44,10 @@ class AuthorizationStateStorageTest extends TestCase
                 $this->store[$key] = $value;
             });
 
-        $this->storage = new AuthorizationStateStorage($session);
+        $dateTime = $this->createStub(DateTime::class);
+        $dateTime->method('gmtTimestamp')->willReturnCallback(fn () => $this->now);
+
+        $this->storage = new AuthorizationStateStorage($session, $dateTime);
     }
 
     private function state(
@@ -70,9 +77,56 @@ class AuthorizationStateStorageTest extends TestCase
 
     public function testEntryWithoutIssuerRestoresEmptyIssuer(): void
     {
-        $this->store['dmlab_admin_sso_auth_states'] = ['s1' => ['nonce' => 'n1', 'code_verifier' => 'v1']];
+        $this->store['dmlab_admin_sso_auth_states'] = [
+            's1' => ['nonce' => 'n1', 'code_verifier' => 'v1', 'created_at' => $this->now],
+        ];
 
         self::assertSame('', $this->storage->consume('s1')?->getIssuer());
+    }
+
+    public function testStateExpiresAfterTtl(): void
+    {
+        $this->storage->save($this->state('s1', 'n1', 'v1'));
+        $this->now += AuthorizationStateStorage::TTL + 1;
+
+        self::assertNull($this->storage->consume('s1'));
+        self::assertSame([], $this->store['dmlab_admin_sso_auth_states']);
+    }
+
+    public function testStateIsValidUpToTtl(): void
+    {
+        $this->storage->save($this->state('s1', 'n1', 'v1'));
+        $this->now += AuthorizationStateStorage::TTL;
+
+        self::assertNotNull($this->storage->consume('s1'));
+    }
+
+    public function testEntryWithoutTimestampIsExpired(): void
+    {
+        $this->store['dmlab_admin_sso_auth_states'] = ['s1' => ['nonce' => 'n1', 'code_verifier' => 'v1']];
+
+        self::assertNull($this->storage->consume('s1'));
+    }
+
+    public function testKeepsOnlyTheNewestPendingStates(): void
+    {
+        for ($i = 1; $i <= AuthorizationStateStorage::MAX_PENDING + 2; $i++) {
+            $this->storage->save($this->state('s' . $i, 'n', 'v'));
+        }
+
+        self::assertCount(AuthorizationStateStorage::MAX_PENDING, $this->store['dmlab_admin_sso_auth_states']);
+        self::assertNull($this->storage->consume('s1'));
+        self::assertNull($this->storage->consume('s2'));
+        self::assertNotNull($this->storage->consume('s' . (AuthorizationStateStorage::MAX_PENDING + 2)));
+    }
+
+    public function testSavePrunesExpiredStates(): void
+    {
+        $this->storage->save($this->state('old', 'n', 'v'));
+        $this->now += AuthorizationStateStorage::TTL + 1;
+        $this->storage->save($this->state('new', 'n', 'v'));
+
+        self::assertSame(['new'], array_keys($this->store['dmlab_admin_sso_auth_states']));
     }
 
     public function testConsumeUnknownStateReturnsNull(): void
