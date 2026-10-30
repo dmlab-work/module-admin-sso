@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class PackagingTest extends TestCase
 {
-    private const string LICENSE_LINE =
+    private const LICENSE_LINE =
         ' * Licensed under the Open Software License version 3.0 (OSL-3.0). See LICENSE.';
 
     private function root(): string
@@ -79,7 +79,7 @@ class PackagingTest extends TestCase
         }
     }
 
-    public function testComposerDeclaresMagentoModulesAndNoVersion(): void
+    public function testComposerDeclaresVersionMagentoModulesAndSuggests(): void
     {
         $composer = json_decode((string)file_get_contents($this->root() . '/composer.json'), true);
 
@@ -88,6 +88,28 @@ class PackagingTest extends TestCase
             self::assertArrayHasKey('magento/module-' . $module, $composer['require']);
         }
         self::assertArrayHasKey('magento/module-two-factor-auth', $composer['suggest']);
+        self::assertArrayHasKey('dmlab/module-admin-scim', $composer['suggest']);
+    }
+
+    public function testComposerSupportsMagento247AndPhp82(): void
+    {
+        $composer = json_decode((string)file_get_contents($this->root() . '/composer.json'), true);
+
+        self::assertSame('~8.2.0||~8.3.0||~8.4.0||~8.5.0', $composer['require']['php']);
+        $magento247 = [
+            'magento/framework' => '^103.0.7',
+            'magento/module-authorization' => '^100.4.7',
+            'magento/module-backend' => '^102.0.7',
+            'magento/module-config' => '^101.2.7',
+            'magento/module-user' => '^101.2.7',
+        ];
+        foreach ($magento247 as $package => $constraint) {
+            self::assertSame($constraint, $composer['require'][$package] ?? null, $package);
+        }
+        foreach ($composer['require'] + $composer['require-dev'] as $package => $constraint) {
+            self::assertStringStartsNotWith('>=', $constraint, $package);
+            self::assertNotSame('*', $constraint, $package);
+        }
     }
 
     public function testModuleSequenceCoversAlteredCoreModules(): void

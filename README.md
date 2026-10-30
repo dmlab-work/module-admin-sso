@@ -4,19 +4,15 @@
 
 [![CI](https://github.com/dmlab-work/module-admin-sso/actions/workflows/ci.yml/badge.svg)](https://github.com/dmlab-work/module-admin-sso/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/dmlab-work/module-admin-sso/graph/badge.svg)](https://codecov.io/gh/dmlab-work/module-admin-sso) [![Packagist Version](https://img.shields.io/packagist/v/dmlab/module-admin-sso)](https://packagist.org/packages/dmlab/module-admin-sso) [![Downloads](https://img.shields.io/packagist/dt/dmlab/module-admin-sso)](https://packagist.org/packages/dmlab/module-admin-sso) [![PHP](https://img.shields.io/packagist/dependency-v/dmlab/module-admin-sso/php)](https://packagist.org/packages/dmlab/module-admin-sso) [![License](https://img.shields.io/packagist/l/dmlab/module-admin-sso)](LICENSE) ![Magento](https://img.shields.io/badge/Magento-2.4-orange)
 
-The admin-login **capability core**: it logs staff into the Magento admin backend over OIDC, but never references a concrete IdP. Install a provider plugin (`admin-sso-okta`, `admin-sso-azure`, …) that supplies the IdP; the plugin pulls this core, which in turn pulls the shared OIDC engine `sso-core`.
+Every admin user in Magento has its own password, staff who leave keep their access until someone remembers to remove them, and paid SSO extensions cap how many users you may have.
 
-## Features
+Admin SSO lets staff sign into the Magento admin with their company account — Okta, Microsoft Entra ID or Google Workspace via a provider plugin. Admin accounts are created on first login and roles come from IdP groups (or a default role); password login can be switched off, with a break-glass list for emergencies. Free, no user cap.
 
-- **JIT admin-user creation** — matches an admin user by IdP issuer + `sub` (or IdP-verified email), creating one on first login.
-- **IdP-group → ACL-role mapping** — assigns Magento roles from IdP groups on every sign-in.
-- **Enforce SSO + break-glass** — block native password login (form and REST token) except for an explicit username allowlist.
-- **2FA interplay** — an SSO login whose ID token proves MFA (`amr`/`acr`) satisfies Magento core 2FA, avoiding a double prompt.
-- **Provider-agnostic** — one core drives any OIDC IdP through a provider preset.
+![Admin SSO settings in Magento: enable, identity provider, client credentials, enforce SSO and break-glass login](.github/images/config.png)
 
-## Installation
+## Install
 
-Normally installed via a provider plugin (e.g. `admin-sso-okta`), which pulls this core and `sso-core`:
+Install a provider plugin (`dmlab/module-admin-sso-okta`, `-azure` or `-google`); it pulls this module and its dependencies:
 
 ```bash
 composer require dmlab/module-admin-sso-okta
@@ -24,15 +20,18 @@ bin/magento module:enable DmLab_SsoCore DmLab_AdminSso DmLab_AdminSsoOkta
 bin/magento setup:upgrade
 ```
 
-Direct install of the core only:
-
-```bash
-composer require dmlab/module-admin-sso
-bin/magento module:enable DmLab_SsoCore DmLab_AdminSso
-bin/magento setup:upgrade
-```
+For Entra ID or Google, require `dmlab/module-admin-sso-azure` / `-google` and enable `DmLab_AdminSsoAzure` / `DmLab_AdminSsoGoogle` instead.
 
 Register the callback URL in your IdP: `https://<admin-host>/<admin-path>/adminsso/sso/callback`, where `<admin-path>` is the backend frontName (default `admin`). It must exactly match the admin URL used at runtime.
+
+## Requirements
+
+- Magento 2.4.7+ · PHP 8.2–8.5
+- A provider plugin: [Okta](https://github.com/dmlab-work/module-admin-sso-okta), [Microsoft Entra ID](https://github.com/dmlab-work/module-admin-sso-azure) or [Google Workspace](https://github.com/dmlab-work/module-admin-sso-google)
+- The admin callback URL registered at the IdP (see Install)
+- `Magento_TwoFactorAuth` optional — MFA done at the IdP is honoured (see [2FA](#2fa))
+
+Pairs with [admin-scim](https://github.com/dmlab-work/module-admin-scim) for automatic admin offboarding.
 
 ## Configuration
 
@@ -96,7 +95,11 @@ With **Sign Out of IdP on Logout** on, logging out of an SSO-established admin s
 
 Register the admin login URL as a post-logout redirect URI at the IdP: `https://<admin-host>/<admin-path>/admin/auth/login/`. If the IdP advertises no `end_session_endpoint`, discovery fails, the active provider changed since login, or the session was a password login, logout stays local.
 
-## How it works
+## Architecture
+
+`admin-sso` is provider-agnostic: it handles admin login, JIT accounts and roles, and delegates the OIDC protocol to the shared engine [`sso-core`](https://github.com/dmlab-work/module-sso-core). Provider plugins (`admin-sso-okta`, `-azure`, `-google`) register a preset (discovery URL, groups claim, branding) that fills the Identity Provider dropdown.
+
+### How it works
 
 1. User clicks "Sign in with SSO" → `adminsso/sso/start` builds the OIDC auth URL (state + nonce + PKCE; pending state valid 10 minutes, at most 10 per session) via sso-core and the active preset, then redirects to the IdP.
 2. The IdP redirects back to `adminsso/sso/callback`, which validates `state` and the response issuer (RFC 9207 `iss`), exchanges the code, and normalizes claims into an `Identity` via sso-core.
@@ -111,20 +114,6 @@ An admin is linked to one IdP identity (issuer + `sub`). Links created before th
 ```sql
 UPDATE admin_user SET dmlab_sso_subject_id = NULL, dmlab_sso_issuer = NULL WHERE user_id IN (...);
 ```
-
-## Requirements
-
-- Magento Open Source / Adobe Commerce **2.4.x** (tested on 2.4.9)
-- PHP **8.3 – 8.5**
-
-## Part of the DMLab identity suite
-
-| Repo | Role |
-|------|------|
-| `sso-core` | Shared OIDC engine (installed automatically) |
-| `admin-sso` · `admin-sso-<idp>` | Admin-panel SSO login |
-| `customer-sso` · `customer-sso-<idp>` | Storefront SSO login |
-| `admin-scim` · `admin-scim-<idp>` | Admin-user provisioning (SCIM 2.0) |
 
 ## License
 

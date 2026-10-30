@@ -9,10 +9,10 @@ namespace DmLab\AdminSso\Test\Unit\Model\Session;
 
 use DmLab\AdminSso\Model\AuthorizationState;
 use DmLab\AdminSso\Model\Session\AuthorizationStateStorage;
+use DmLab\AdminSso\Test\Unit\Helper\PartialMockTrait;
 use DmLab\SsoCore\Api\Data\AuthorizationStateInterface;
 use Magento\Backend\Model\Session;
 use Magento\Framework\Stdlib\DateTime\DateTime;
-use Magento\Framework\TestFramework\Unit\Helper\MockCreationTrait;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 #[AllowMockObjectsWithoutExpectations]
 class AuthorizationStateStorageTest extends TestCase
 {
-    use MockCreationTrait;
+    use PartialMockTrait;
 
     /** @var array<string,mixed> */
     private array $store = [];
