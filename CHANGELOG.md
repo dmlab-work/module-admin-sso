@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.4
+
+- Requires Magento 2.4.7+ and PHP 8.2–8.5 (`^` constraints at the 2.4.7 module versions).
+- CI: unit matrix PHP 8.2–8.5; CI installs no longer counted as Packagist downloads.
+- composer.json: keywords, homepage, support links; suggests `dmlab/module-admin-scim`.
+- README restructured with a configuration screenshot.
+
 ## 0.2.3
 
 - Added: **Sign Out of IdP on Logout** (`dmlab_admin_sso/general/idp_logout`, default No). Admin logout of an SSO session redirects to the IdP `end_session_endpoint` with `id_token_hint`; register `https://<admin-host>/<admin-path>/admin/auth/login/` as a post-logout redirect URI at the IdP. Falls back to local logout when unavailable.
